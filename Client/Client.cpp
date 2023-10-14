@@ -1,119 +1,64 @@
 //
 // Created by Lando Shepherd on 10/14/23.
 //
-#include <iostream>
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
-#include <thread>
-#include <chrono>
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ip/tcp.hpp>
-
 #include "Client.hpp"
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 Client::Client()
         : m_buffer(),
-          m_error() {}
+          m_error(),
+          m_destinationHost(),
+          m_destinationPort(){}
 
-Client::~Client() {}
+Client::~Client() = default;
 
-bool Client::InitializeClient(std::string &serverName, std::string &serviceName) {
-    bool rc = true;
-    if (!started) {
-        try {
-            std::cout << "Initializing client..." << std::endl;
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+bool Client::Initialize() {
+    bool status = true;
+    std::string errorMessage;
 
-            m_context.reset(new boost::asio::io_context());
-            m_tcpResolver.reset(new tcp::resolver(*m_context));
-            m_socket.reset(new tcp::socket(*m_context));
-
-            if (!ResolveEndPoints(serviceName)) {
-                return false;
-            }
-
-            if (!ConnectToSocket()) {
-                return false;
-            }
-
-            started = true;
-        }
-        catch (std::exception& ex) {
-            std::cout << "Exception. Location: Daytime1.cpp - InitializeClient(). What: Failed to initialize client: "
-                      << serviceName << std::endl;
-            rc = false;
-            return rc;
-        }
+    try {
+        m_ioContext = std::make_shared<boost::asio::io_context>();
+        m_Resolver = std::make_shared<tcp::resolver>(*m_ioContext);
+        m_WebSocketStream = std::make_shared<websocket::stream<tcp::socket>>(*m_ioContext);
     }
-    std::cout << "Client initialized..." << std::endl;
-    return rc;
+    catch(std::exception& ex){
+        status = false;
+        errorMessage = "Exception. Location: Client.cpp - Initialize().\n";
+        errorMessage += ex.what();
+        std::cout << errorMessage << std::endl;
+    }
+    return status;
 }
 
 bool Client::Start() {
     try
     {
-        std::string host = "127.0.0.1";
-        auto const  port = "8001";
-        auto const  text = "Hello";
+        std::cout << "Starting client..." << std::endl;
+        m_destinationHost = "127.0.0.1";
+        m_destinationPort = "8001";
 
-        // The io_context is required for all I/O
-        net::io_context ioc;
+        if (ConnectToServer()){
+            while(true){
+                std::string message;
+                std::getline(std::cin, message);
 
-        // These objects perform our I/O
-        tcp::resolver resolver{ioc};
-        websocket::stream<tcp::socket> ws{ioc};
+                // Send the message
+                m_WebSocketStream->write(net::buffer(message));
+            }
 
-        // Look up the domain name
-        auto const results = resolver.resolve(host, port);
+            // This buffer will hold the incoming message
+            beast::flat_buffer buffer;
 
-        // Make the connection on the IP address we get from a lookup
-        auto ep = net::connect(ws.next_layer(), results);
+            // Read a message into our buffer
+            m_WebSocketStream->read(buffer);
 
-        // Update the host_ string. This will provide the value of the
-        // Host HTTP header during the WebSocket handshake.
-        // See https://tools.ietf.org/html/rfc7230#section-5.4
-        host += ':' + std::to_string(ep.port());
+            // Close the WebSocket connection
+            m_WebSocketStream->close(websocket::close_code::normal);
 
-        // Set a decorator to change the User-Agent of the handshake
-        ws.set_option(websocket::stream_base::decorator(
-                [](websocket::request_type& req)
-                {
-                    req.set(http::field::user_agent,
-                            std::string(BOOST_BEAST_VERSION_STRING) +
-                            " websocket-client-coro");
-                }));
+            // If we get here then the connection is closed gracefully
 
-        // Perform the websocket handshake
-        ws.handshake(host, "/");
-
-        while(true){
-            std::string message;
-            std::getline(std::cin, message);
-
-            // Send the message
-            ws.write(net::buffer(message));
+            // The make_printable() function helps print a ConstBufferSequence
+            std::cout << beast::make_printable(buffer.data()) << std::endl;
         }
-
-        // This buffer will hold the incoming message
-        beast::flat_buffer buffer;
-
-        // Read a message into our buffer
-        ws.read(buffer);
-
-        // Close the WebSocket connection
-        ws.close(websocket::close_code::normal);
-
-        // If we get here then the connection is closed gracefully
-
-        // The make_printable() function helps print a ConstBufferSequence
-        std::cout << beast::make_printable(buffer.data()) << std::endl;
     }
     catch(std::exception const& e)
     {
@@ -123,44 +68,35 @@ bool Client::Start() {
     return EXIT_SUCCESS;
 }
 
-bool Client::ResolveEndPoints(std::string &serviceName) {
+bool Client::ConnectToServer() {
     bool rc = true;
-
-    try {
-        m_endPoints = m_tcpResolver->resolve("127.0.0.1", serviceName);
-        if (m_endPoints.empty()) {
-            std::cout << "Could not resolve server name" << std::endl;
-            rc = false;
-        }
-    }
-    catch (...) {
-        rc = false;
-        std::cout << "Exception. Location: Daytime1.cpp - m_ResolveEndPoints(). What: Failed to resolve endpoints."
-                  << std::endl;
-    }
-    return rc;
-}
-
-bool Client::ConnectToSocket() {
-    bool rc = false;
     boost::system::error_code errorCode;
 
-    try {
-        boost::asio::connect(*m_socket, m_endPoints, errorCode);
+    try{
+        std::cout << "Connecting to server..." << std::endl;
+        // Look up the domain name
+        auto const results = m_Resolver->resolve(m_destinationHost, m_destinationPort);
 
-        if (!m_socket->is_open()) {
-            std::cout << "Socket failed to connect." << std::endl;
-            return false;
-        } else {
-            std::cout << "Socket is open." << std::endl;
-            return true;
-        }
+        // Make the connection on the IP address we get from a lookup
+        auto endpoint = net::connect(m_WebSocketStream->next_layer(), results);
+        m_destinationHost += ':' + std::to_string(endpoint.port());
+
+        // Set a decorator to change the User-Agent of the handshake
+        m_WebSocketStream->set_option(websocket::stream_base::decorator(
+                [](websocket::request_type& req)
+                {
+                    req.set(http::field::user_agent,
+                            std::string(BOOST_BEAST_VERSION_STRING) +
+                            " websocket-client-coro");
+                }));
+
+        // Perform the websocket handshake
+        m_WebSocketStream->handshake(m_destinationHost, "/");
+
+        std::cout << "Successfully connected to server." << std::endl;
     }
-    catch (std::exception& e) {
+    catch(std::exception& ex){
         rc = false;
-        std::cout << "Exception. Location: Daytime1.cpp - m_ConnectToSocket(). Failed to connect to socket."
-                  << std::endl;
-        std::cout << "Error Code: " << errorCode.message() << std::endl;
     }
 
     return rc;
