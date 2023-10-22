@@ -5,6 +5,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <vector>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -17,7 +18,7 @@ public:
     Server();
     ~Server();
     bool InitializeServer();
-    void do_session(tcp::socket& socket);
+    void do_session(std::vector<tcp::socket>& connections);
     bool Start();
 
 private:

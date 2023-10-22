@@ -43,13 +43,19 @@ bool Client::Start() {
 
                 // Send the message
                 m_WebSocketStream->write(net::buffer(message));
+
+                // This buffer will hold the incoming message
+                beast::flat_buffer buffer;
+
+                // Read a message into our buffer
+                m_WebSocketStream->read(buffer);
+                std::string incomingMessage = beast::buffers_to_string(buffer.data());
+                std::cout << incomingMessage << std::endl;
             }
 
-            // This buffer will hold the incoming message
-            beast::flat_buffer buffer;
 
-            // Read a message into our buffer
-            m_WebSocketStream->read(buffer);
+
+
 
             // Close the WebSocket connection
             m_WebSocketStream->close(websocket::close_code::normal);
@@ -57,7 +63,7 @@ bool Client::Start() {
             // If we get here then the connection is closed gracefully
 
             // The make_printable() function helps print a ConstBufferSequence
-            std::cout << beast::make_printable(buffer.data()) << std::endl;
+            //std::cout << beast::make_printable(buffer.data()) << std::endl;
         }
     }
     catch(std::exception const& e)
@@ -69,7 +75,7 @@ bool Client::Start() {
 }
 
 bool Client::ConnectToServer() {
-    bool rc = true;
+    bool status = true;
     boost::system::error_code errorCode;
 
     try{
@@ -96,8 +102,8 @@ bool Client::ConnectToServer() {
         std::cout << "Successfully connected to server." << std::endl;
     }
     catch(std::exception& ex){
-        rc = false;
+        status = false;
     }
 
-    return rc;
+    return status;
 }

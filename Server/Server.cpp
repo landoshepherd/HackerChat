@@ -8,6 +8,91 @@
 
 using boost::asio::ip::tcp;
 
+class Session{
+private:
+    boost::asio::io_context io_context;
+    std::vector<tcp::socket> m_connections;
+
+public:
+    void AddSocketToSession(tcp::socket& socket){
+        m_connections.push_back(std::move(socket));
+    }
+
+    void do_session()
+    {
+        try
+        {
+            // Construct the stream by moving in the socket
+            websocket::stream<tcp::socket> ws1{std::move(m_connections[0])};
+            websocket::stream<tcp::socket> ws2{std::move(m_connections[1])};
+
+            // Set a decorator to change the Server of the handshake
+            ws1.set_option(websocket::stream_base::decorator(
+                    [](websocket::response_type& res)
+                    {
+                        res.set(http::field::server,
+                                std::string(BOOST_BEAST_VERSION_STRING) +
+                                " websocket-server-async");
+                    }));
+
+            ws2.set_option(websocket::stream_base::decorator(
+                    [](websocket::response_type& res)
+                    {
+                        res.set(http::field::server,
+                                std::string(BOOST_BEAST_VERSION_STRING) +
+                                " websocket-server-async");
+                    }));
+
+            // Accept the websocket handshake
+            ws1.async_accept(beast::bind_front_handler(shared_from_this()));
+            ws2.accept();
+
+            std::cout << "Websocket handshakes accepted." << std::endl;
+
+            while(true)
+            {
+                // This buffer will hold the incoming message
+                beast::flat_buffer buffer1;
+                beast::flat_buffer buffer2;
+
+                // Read a message from client 1
+                ws1.read(buffer1);
+                std::string incomingMessage = beast::buffers_to_string(buffer1.data());
+                std::cout << "Received from client 1: " << incomingMessage << std::endl;
+
+                // Read message from client 2
+                ws2.read(buffer2);
+                incomingMessage = beast::buffers_to_string(buffer2.data());
+                std::cout << "Received from client 2: " << incomingMessage << std::endl;
+
+                ws1.write(buffer2.data());
+                ws2.write(buffer1.data());
+
+                buffer1.clear();
+                buffer2.clear();
+                //ws2.write(net::buffer(incomingMessage));
+
+                // Echo the message back
+//            ws.text(ws.got_text());
+//            ws.write(buffer.data());
+            }
+        }
+        catch(beast::system_error const& se)
+        {
+            // This indicates that the session was closed
+            if(se.code() != websocket::error::closed)
+                std::cerr << "Error: " << se.code().message() << std::endl;
+        }
+        catch(std::exception const& e)
+        {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
+    }
+
+    int GetNumOfConnections(){
+        return m_connections.size();
+    }
+};
 
 Server::Server() :
         m_errorCode() {}
@@ -15,7 +100,7 @@ Server::Server() :
 Server::~Server() = default;
 
 bool Server::InitializeServer() {
-    bool rc = true;
+    bool status = true;
     std::string errorMessage;
     std::cout << "Initializing server..." << std::endl;
     try {
@@ -41,64 +126,16 @@ bool Server::InitializeServer() {
         errorMessage = "Exception. Failed to initialize server.";
         std::cout << errorMessage << std::endl;
         std::cout << e.what() << std::endl;
-        rc = false;
+        status = false;
     }
 
-    return rc;
+    return status;
 }
 
-void Server::do_session(tcp::socket& socket)
-{
-    try
-    {
-        // Construct the stream by moving in the socket
-        websocket::stream<tcp::socket> ws{std::move(socket)};
 
-        // Set a decorator to change the Server of the handshake
-        ws.set_option(websocket::stream_base::decorator(
-                [](websocket::response_type& res)
-                {
-                    res.set(http::field::server,
-                            std::string(BOOST_BEAST_VERSION_STRING) +
-                            " websocket-server-sync");
-                }));
-
-        // Accept the websocket handshake
-        ws.accept();
-
-        std::cout << "Websocket handshake accepted." << std::endl;
-
-        for(;;)
-        {
-            // This buffer will hold the incoming message
-            beast::flat_buffer buffer;
-
-            // Read a message
-            ws.read(buffer);
-
-            std::string incomingMessage = beast::buffers_to_string(buffer.data());
-
-            std::cout << incomingMessage << std::endl;
-
-            // Echo the message back
-            ws.text(ws.got_text());
-            ws.write(buffer.data());
-        }
-    }
-    catch(beast::system_error const& se)
-    {
-        // This indicates that the session was closed
-        if(se.code() != websocket::error::closed)
-            std::cerr << "Error: " << se.code().message() << std::endl;
-    }
-    catch(std::exception const& e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-}
 
 bool Server::Start() {
-    bool rc = true;
+    bool status = true;
     std::string errorMessage;
     beast::flat_buffer buffer;
     std::string message;
@@ -114,6 +151,8 @@ bool Server::Start() {
 
         // The acceptor receives incoming connections
         tcp::acceptor acceptor{ioc, {address, port}};
+
+        Session session;
         while(true)
         {
             // This will receive the new connection
@@ -121,15 +160,22 @@ bool Server::Start() {
 
             // Block until we get a connection
             acceptor.accept(socket);
+            session.AddSocketToSession(socket);
 
-            std::cout << "Socket connection accepted." << std::endl;
-            // Launch the session, transferring ownership of the socket
-//            std::thread sessionThread([this, &socket](){
-//                this->do_session(socket);
-//            });
-//
-//            sessionThread.join();
-            do_session(socket);
+            if (session.GetNumOfConnections() == 1){
+                std::cout << "Recieved first connection." << std::endl;
+            }
+            else if (session.GetNumOfConnections() == 2){
+                std::cout << "Recieved second connection. Starting session..." << std::endl;
+
+                //Launch the session, transferring ownership of the session object
+                std::thread sessionThread([&session](){
+                    session.do_session();
+                });
+
+                sessionThread.join();
+            }
+            //do_session(socket);
         }
     }
     catch (const std::exception& e)
@@ -138,5 +184,5 @@ bool Server::Start() {
         std::cerr << errorMessage << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-    return rc;
+    return status;
 }
