@@ -35,6 +35,11 @@ bool Client::Start() {
         std::cout << "Starting client..." << std::endl;
         m_destinationHost = "127.0.0.1";
         m_destinationPort = "8001";
+        pugi::xml_document doc;
+
+        pugi::xml_node childNode = doc.append_child("test");
+        childNode.set_value("bucko");
+        
 
         if (ConnectToServer()){
             while(true){
