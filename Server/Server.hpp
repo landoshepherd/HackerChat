@@ -29,4 +29,5 @@ private:
     std::shared_ptr<tcp::socket> m_socket;
     std::shared_ptr<websocket::stream<tcp::socket>> m_webSocketStream;
     boost::system::error_code m_errorCode;
+    int m_numOfActiveSessions;
 };

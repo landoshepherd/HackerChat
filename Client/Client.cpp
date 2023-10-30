@@ -39,7 +39,7 @@ bool Client::Start() {
 
         pugi::xml_node childNode = doc.append_child("test");
         childNode.set_value("bucko");
-        
+
 
         if (ConnectToServer()){
             while(true){

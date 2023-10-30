@@ -10,7 +10,8 @@
 using boost::asio::ip::tcp;
 
 Server::Server() :
-        m_errorCode() {}
+        m_errorCode(),
+        m_numOfActiveSessions(0){}
 
 Server::~Server() = default;
 
@@ -22,7 +23,7 @@ bool Server::InitializeServer() {
         // Set address and port
         auto const address = net::ip::make_address("127.0.0.1");
         auto const port = static_cast<unsigned short>(8000);
-        m_context = std::make_shared<boost::asio::io_context>();
+        m_context = std::make_shared<boost::asio::io_context>(1);
         m_acceptor = std::make_shared<tcp::acceptor>(*m_context, boost::asio::ip::tcp::endpoint(address, port));
         m_socket = std::make_shared<tcp::socket>(*m_context);
         m_webSocketStream = std::make_shared<websocket::stream<tcp::socket>>(*m_context);
@@ -61,25 +62,31 @@ bool Server::Start() {
         auto const address = net::ip::make_address("127.0.0.1");
         auto const port = static_cast<unsigned short>(8001);
 
-        net::io_context ioc(1);
-        tcp::acceptor acceptor{ioc, {address, port}};
+        //net::io_context ioc(1);
+        //tcp::acceptor acceptor{*m_context, {address, port}};
 
+        // TODO: Need to create a new session for new users that join
         Session session;
+        session.Initialize();
+
         while(true)
         {
-            tcp::socket socket(ioc);
+            tcp::socket socket(*m_context);
 
-            acceptor.accept(socket);
+            //NOTE: There needs to be an async version of this and the completion handler should be a function
+            //that adds the socket to a session.
+            m_acceptor->accept(socket);
+
             session.AddSocketToSession(socket);
 
-            if (session.GetNumOfConnections() == 1){
+            if (session.GetNumOfConnections() < 2){
                 std::cout << "Recieved first connection." << std::endl;
             }
-            else if (session.GetNumOfConnections() == 2){
+            else{
                 std::cout << "Recieved second connection. Starting session..." << std::endl;
 
                 std::thread sessionThread([&session](){
-                    session.do_session();
+                    session.Start();
                 });
 
                 sessionThread.join();
