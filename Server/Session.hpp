@@ -12,20 +12,34 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <vector>
+#include <mutex>
+#include <queue>
 
-using boost::asio::ip::tcp;
-class Session {
+using tcp = boost::asio::ip::tcp;
+namespace beast = boost::beast;
+namespace websocket = beast::websocket;
+namespace http = beast::http;
+namespace net = boost::asio;
+
+class Session : public std::enable_shared_from_this<Session> {
 private:
-    boost::asio::io_context io_context;
-    std::vector<tcp::socket> m_connections;
+    websocket::stream<beast::tcp_stream> ws_;
+    beast::flat_buffer buffer_;
+    std::queue<std::string> m_messageQueue;
+    std::mutex m_queueLock;
+
+private:
+    void OnRun();
+    void OnAccept(beast::error_code ec);
+    void DoRead();
+    void OnRead(beast::error_code ec, std::size_t bytes_transferred);
+    void OnWrite(beast::error_code ec, std::size_t bytes_transferred);
+    void fail(beast::error_code ec, char const* what);
 
 public:
-    Session();
-    void AddSocketToSession(tcp::socket& socket);
-    void do_session();
-    int GetNumOfConnections();
-    ~Session();
+    explicit Session(tcp::socket&& socket);
+    void Run();
+    ~Session() = default;
 };
-
 
 #endif //HACKERCHAT_SESSION_HPP

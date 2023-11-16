@@ -6,11 +6,13 @@
 
 #include "Server.hpp"
 #include "Session.hpp"
+#include "Listener.hpp"
 
 using boost::asio::ip::tcp;
 
 Server::Server() :
-        m_errorCode() {}
+        m_errorCode(),
+        m_numOfActiveSessions(0){}
 
 Server::~Server() = default;
 
@@ -18,11 +20,16 @@ bool Server::InitializeServer() {
     bool status = true;
     std::string errorMessage;
     std::cout << "Initializing server..." << std::endl;
+
+    auto const address = net::ip::make_address("127.0.0.1");
+    auto const port = static_cast<unsigned short>(8000);
+    //auto const threads = std::max<int>(1, std::atoi(argv[3]));
+
     try {
         // Set address and port
         auto const address = net::ip::make_address("127.0.0.1");
         auto const port = static_cast<unsigned short>(8000);
-        m_context = std::make_shared<boost::asio::io_context>();
+        m_context = std::make_shared<boost::asio::io_context>(1);
         m_acceptor = std::make_shared<tcp::acceptor>(*m_context, boost::asio::ip::tcp::endpoint(address, port));
         m_socket = std::make_shared<tcp::socket>(*m_context);
         m_webSocketStream = std::make_shared<websocket::stream<tcp::socket>>(*m_context);
@@ -47,8 +54,6 @@ bool Server::InitializeServer() {
     return status;
 }
 
-
-
 bool Server::Start() {
     bool status = true;
     std::string errorMessage;
@@ -62,30 +67,12 @@ bool Server::Start() {
         auto const port = static_cast<unsigned short>(8001);
 
         net::io_context ioc(1);
-        tcp::acceptor acceptor{ioc, {address, port}};
+        //tcp::acceptor acceptor{*m_context, {address, port}};
 
-        Session session;
-        while(true)
-        {
-            tcp::socket socket(ioc);
+        // Create and launch a listening port
+        std::make_shared<Listener>(ioc, tcp::endpoint{address, port})->Run();
 
-            acceptor.accept(socket);
-            session.AddSocketToSession(socket);
-
-            if (session.GetNumOfConnections() == 1){
-                std::cout << "Recieved first connection." << std::endl;
-            }
-            else if (session.GetNumOfConnections() == 2){
-                std::cout << "Recieved second connection. Starting session..." << std::endl;
-
-                std::thread sessionThread([&session](){
-                    session.do_session();
-                });
-
-                sessionThread.join();
-            }
-            //do_session(socket);
-        }
+        ioc.run();
     }
     catch (const std::exception& e)
     {

@@ -2,83 +2,85 @@
 // Created by Lando Shepherd on 10/25/23.
 //
 #include "Session.hpp"
+#include <thread>
+#include <chrono>
 
-namespace beast = boost::beast;
-namespace websocket = beast::websocket;
-namespace http = beast::http;
-
-void Session::AddSocketToSession(tcp::socket& socket){
-    m_connections.push_back(std::move(socket));
-}
-
-void Session::do_session()
+// Report a failure
+void Session::fail(beast::error_code ec, char const* what)
 {
-    try
-    {
-        websocket::stream<tcp::socket> ws1{std::move(m_connections[0])};
-        websocket::stream<tcp::socket> ws2{std::move(m_connections[1])};
-
-        ws1.set_option(websocket::stream_base::decorator(
-                [](websocket::response_type& res)
-                {
-                    res.set(http::field::server,
-                            std::string(BOOST_BEAST_VERSION_STRING) +
-                            " websocket-server-async");
-                }));
-
-        ws2.set_option(websocket::stream_base::decorator(
-                [](websocket::response_type& res)
-                {
-                    res.set(http::field::server,
-                            std::string(BOOST_BEAST_VERSION_STRING) +
-                            " websocket-server-async");
-                }));
-
-        ws1.accept();
-        ws2.accept();
-
-        std::cout << "Websocket handshakes accepted." << std::endl;
-
-        while(true)
-        {
-            // This buffer will hold the incoming message
-            beast::flat_buffer buffer1;
-            beast::flat_buffer buffer2;
-
-            // Read a message from client 1
-            ws1.read(buffer1);
-            std::string incomingMessage = beast::buffers_to_string(buffer1.data());
-            std::cout << "Received from client 1: " << incomingMessage << std::endl;
-
-            // Read message from client 2
-            ws2.read(buffer2);
-            incomingMessage = beast::buffers_to_string(buffer2.data());
-            std::cout << "Received from client 2: " << incomingMessage << std::endl;
-
-            ws1.write(buffer2.data());
-            ws2.write(buffer1.data());
-
-            buffer1.clear();
-            buffer2.clear();
-            //ws2.write(net::buffer(incomingMessage));
-
-            // Echo the message back
-//            ws.text(ws.got_text());
-//            ws.write(buffer.data());
-        }
-    }
-    catch(beast::system_error const& se)
-    {
-        // This indicates that the session was closed
-        if(se.code() != websocket::error::closed)
-            std::cerr << "Error: " << se.code().message() << std::endl;
-    }
-    catch(std::exception const& e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
+    std::cout << what << ": " << ec.message() << "\n";
 }
 
-int Session::GetNumOfConnections(){
-    return m_connections.size();
+// Take ownership of the socket
+Session::Session(tcp::socket&& socket)
+:ws_(std::move(socket)){}
+
+// Get on the correct executor
+void Session::Run() {
+    // We need to be executing within a strand to perform async operations
+    // on the I/O objects in this session. Although not strictly necessary
+    // for single-threaded contexts, this example code is written to be
+    // thread-safe by default.
+    net::dispatch(ws_.get_executor(), beast::bind_front_handler(&Session::OnRun, shared_from_this()));
+}
+
+// Start the asynchronous operation
+void Session::OnRun() {
+    // Set suggested timeout settings for the websocket
+    ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
+
+    // Set a decorator to change the Server of the handshake
+    ws_.set_option(websocket::stream_base::decorator(
+            [](websocket::response_type &res) {
+                res.set(http::field::server,
+                        std::string(BOOST_BEAST_VERSION_STRING) +
+                        " websocket-server-async");
+            }));
+    // Accept the websocket handshake
+    ws_.async_accept(beast::bind_front_handler(&Session::OnAccept, shared_from_this()));
+}
+
+void Session::OnAccept(beast::error_code ec) {
+    if (ec) {
+        return fail(ec, "accept");
+    }
+    // Read a message
+    DoRead();
+}
+
+void Session::DoRead() {
+    // Read a message into our buffer
+    ws_.async_read(buffer_, beast::bind_front_handler(&Session::OnRead, shared_from_this()));
+}
+
+void Session::OnRead(beast::error_code ec, std::size_t bytes_transferred) {
+    boost::ignore_unused(bytes_transferred);
+
+    // This indicates that the session was closed
+    if (ec == websocket::error::closed) {
+        return;
+    }
+
+    if (ec) {
+        return fail(ec, "read");
+    }
+
+    // Echo the message
+    std::cout << beast::buffers_to_string(buffer_.data()) << std::endl;
+    ws_.text(ws_.got_text());
+    ws_.async_write(buffer_.data(), beast::bind_front_handler(&Session::OnWrite, shared_from_this()));
+}
+
+void Session::OnWrite(beast::error_code ec, std::size_t bytes_transferred) {
+    boost::ignore_unused(bytes_transferred);
+
+    if (ec) {
+        return fail(ec, "write");
+    }
+
+    // Clear the buffer
+    buffer_.consume(buffer_.size());
+
+    // Do another read
+    DoRead();
 }
