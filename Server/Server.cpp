@@ -6,6 +6,7 @@
 
 #include "Server.hpp"
 #include "Session.hpp"
+#include "Listener.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -19,6 +20,11 @@ bool Server::InitializeServer() {
     bool status = true;
     std::string errorMessage;
     std::cout << "Initializing server..." << std::endl;
+
+    auto const address = net::ip::make_address("127.0.0.1");
+    auto const port = static_cast<unsigned short>(8000);
+    //auto const threads = std::max<int>(1, std::atoi(argv[3]));
+
     try {
         // Set address and port
         auto const address = net::ip::make_address("127.0.0.1");
@@ -48,8 +54,6 @@ bool Server::InitializeServer() {
     return status;
 }
 
-
-
 bool Server::Start() {
     bool status = true;
     std::string errorMessage;
@@ -62,37 +66,13 @@ bool Server::Start() {
         auto const address = net::ip::make_address("127.0.0.1");
         auto const port = static_cast<unsigned short>(8001);
 
-        //net::io_context ioc(1);
+        net::io_context ioc(1);
         //tcp::acceptor acceptor{*m_context, {address, port}};
 
-        // TODO: Need to create a new session for new users that join
-        Session session;
-        session.Initialize();
+        // Create and launch a listening port
+        std::make_shared<Listener>(ioc, tcp::endpoint{address, port})->Run();
 
-        while(true)
-        {
-            tcp::socket socket(*m_context);
-
-            //NOTE: There needs to be an async version of this and the completion handler should be a function
-            //that adds the socket to a session.
-            m_acceptor->accept(socket);
-
-            session.AddSocketToSession(socket);
-
-            if (session.GetNumOfConnections() < 2){
-                std::cout << "Recieved first connection." << std::endl;
-            }
-            else{
-                std::cout << "Recieved second connection. Starting session..." << std::endl;
-
-                std::thread sessionThread([&session](){
-                    session.Start();
-                });
-
-                sessionThread.join();
-            }
-            //do_session(socket);
-        }
+        ioc.run();
     }
     catch (const std::exception& e)
     {

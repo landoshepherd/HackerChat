@@ -16,9 +16,13 @@ add_executable(HackerChatServer main.cpp
         Server/Server.hpp
         ${PUGIXML_CPP}
         Server/Session.cpp
-        Server/Session.hpp)
+        Server/Session.hpp
+        Server/Listener.cpp
+        Server/Listener.hpp)
 
 add_executable(HackerChatClient Client/ClientMain.cpp
         Client/Client.hpp
         Client/Client.cpp
         ${PUGIXML_CPP})
+
+add_executable(TestServer test_server.cpp)

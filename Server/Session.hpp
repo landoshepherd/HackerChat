@@ -12,40 +12,34 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <vector>
+#include <mutex>
+#include <queue>
 
-using boost::asio::ip::tcp;
+using tcp = boost::asio::ip::tcp;
 namespace beast = boost::beast;
 namespace websocket = beast::websocket;
 namespace http = beast::http;
 namespace net = boost::asio;
 
-struct Connection {
-    std::unique_ptr<tcp::socket> connectionSocket;
-    std::shared_ptr<websocket::stream<beast::tcp_stream>> connectionStream;
-};
-
 class Session : public std::enable_shared_from_this<Session> {
 private:
-    std::shared_ptr<boost::asio::io_context> m_io_context;
-    std::vector<Connection> m_connections;
-    bool m_initialized;
+    websocket::stream<beast::tcp_stream> ws_;
+    beast::flat_buffer buffer_;
+    std::queue<std::string> m_messageQueue;
+    std::mutex m_queueLock;
+
+private:
+    void OnRun();
+    void OnAccept(beast::error_code ec);
+    void DoRead();
+    void OnRead(beast::error_code ec, std::size_t bytes_transferred);
+    void OnWrite(beast::error_code ec, std::size_t bytes_transferred);
+    void fail(beast::error_code ec, char const* what);
 
 public:
-    Session();
-    void Initialize();
-    bool AddSocketToSession(tcp::socket &socket);
-    void DoSession(std::shared_ptr<websocket::stream<beast::tcp_stream>> readStream,
-                   std::shared_ptr<websocket::stream<beast::tcp_stream>> writeStream);
-    void DoRun();
-    int GetNumOfConnections();
-    void DoRead(std::shared_ptr<websocket::stream<beast::tcp_stream>> readStream,
-                std::shared_ptr<websocket::stream<beast::tcp_stream>> writeStream);
-    void DoWrite(std::shared_ptr<websocket::stream<beast::tcp_stream>> readStream,
-                std::shared_ptr<websocket::stream<beast::tcp_stream>> writeStream,
-                 beast::flat_buffer buffer1);
-    void ClearBuffer(beast::flat_buffer buffer1);
-    void Start();
-    ~Session();
+    explicit Session(tcp::socket&& socket);
+    void Run();
+    ~Session() = default;
 };
 
 #endif //HACKERCHAT_SESSION_HPP
