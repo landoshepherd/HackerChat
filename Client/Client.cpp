@@ -73,7 +73,7 @@ bool Client::Start() {
     }
     catch(std::exception const& e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cout << "Error: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
