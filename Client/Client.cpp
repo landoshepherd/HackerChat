@@ -38,8 +38,7 @@ void Client::on_resolve(beast::error_code ec, tcp::resolver::results_type result
     beast::get_lowest_layer(ws_).expires_after(std::chrono::seconds(30));
 
     // Make the connection on the IP address we get from a lookup
-    beast::get_lowest_layer(ws_).async_connect(results,
-                                               beast::bind_front_handler(&Client::on_connect, shared_from_this()));
+    beast::get_lowest_layer(ws_).async_connect(results, beast::bind_front_handler(&Client::on_connect, shared_from_this()));
 }
 
 void Client::on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep) {
@@ -114,7 +113,7 @@ void Client::on_close(beast::error_code ec) {
 }
 
 void Client::fail(beast::error_code ec, char const* what){
-    std::cin << what << ": " << ec.message() << "\n";
+    std::cout << what << ": " << ec.message() << "\n";
 }
 
 int Client::Start() {

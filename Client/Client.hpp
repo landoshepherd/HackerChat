@@ -17,6 +17,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 // Sends a WebSocket message and prints the response
 class Client : public std::enable_shared_from_this<Client>
 {
+private:
     tcp::resolver resolver_;
     websocket::stream<beast::tcp_stream> ws_;
     beast::flat_buffer buffer_;
@@ -34,5 +35,5 @@ public:
     void on_read(beast::error_code ec, std::size_t bytes_transferred);
     void on_close(beast::error_code ec);
     void fail(beast::error_code ec, char const* what);
-    int Start();
+    static int Start();
 };
