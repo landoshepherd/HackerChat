@@ -1,8 +1,6 @@
 #include "Client.hpp"
 
 int main(){
-    Client client;
-    client.Initialize();
-    client.Start();
+    Client::Start();
     return 0;
 }
