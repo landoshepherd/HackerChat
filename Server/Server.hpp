@@ -15,19 +15,24 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-class Server{
+class Server : public std::enable_shared_from_this<Server>{
 public:
     Server();
     ~Server();
     bool InitializeServer();
     void do_session(std::vector<tcp::socket>& connections);
+    void StartServerListener();
+    void fail(beast::error_code ec, char const* what);
+    void DoAccept();
+    void OnAccept(beast::error_code ec, tcp::socket socket);
     bool Start();
 
 private:
-    std::shared_ptr<boost::asio::io_context> m_context;
-    std::shared_ptr<tcp::acceptor> m_acceptor;
+    boost::asio::io_context _ioc;
+    std::shared_ptr<tcp::acceptor> _acceptor;
     std::shared_ptr<tcp::socket> m_socket;
     std::shared_ptr<websocket::stream<tcp::socket>> m_webSocketStream;
+    tcp::endpoint _endPoint;
     boost::system::error_code m_errorCode;
     int m_numOfActiveSessions;
 };

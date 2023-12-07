@@ -38,6 +38,7 @@ private:
 
 public:
     explicit Session(tcp::socket&& socket);
+    Session() = default;
     void Run();
     ~Session() = default;
 };

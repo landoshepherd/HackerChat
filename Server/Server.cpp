@@ -11,47 +11,70 @@
 using boost::asio::ip::tcp;
 
 Server::Server() :
+        _ioc(1),
         m_errorCode(),
         m_numOfActiveSessions(0){}
 
 Server::~Server() = default;
 
-bool Server::InitializeServer() {
-    bool status = true;
-    std::string errorMessage;
-    std::cout << "Initializing server..." << std::endl;
+void Server::fail(beast::error_code ec, char const* what)
+{
+    std::cerr << what << ": " << ec.message() << "\n";
+}
 
-    auto const address = net::ip::make_address("127.0.0.1");
-    auto const port = static_cast<unsigned short>(8000);
-    //auto const threads = std::max<int>(1, std::atoi(argv[3]));
+void Server::StartServerListener(){
+    beast::error_code ec;
 
-    try {
-        // Set address and port
-        auto const address = net::ip::make_address("127.0.0.1");
-        auto const port = static_cast<unsigned short>(8000);
-        m_context = std::make_shared<boost::asio::io_context>(1);
-        m_acceptor = std::make_shared<tcp::acceptor>(*m_context, boost::asio::ip::tcp::endpoint(address, port));
-        m_socket = std::make_shared<tcp::socket>(*m_context);
-        m_webSocketStream = std::make_shared<websocket::stream<tcp::socket>>(*m_context);
+    // Open the acceptor
+    if (!_acceptor->is_open()) {
+        _acceptor->open(_endPoint.protocol(), ec);
 
-        // Set a decorator to change the Server of the handshake
-        m_webSocketStream->set_option(websocket::stream_base::decorator(
-                [](websocket::response_type& res)
-                {
-                    res.set(http::field::server,
-                            std::string(BOOST_BEAST_VERSION_STRING) +
-                            " websocket-server-sync");
-                }));
-
-    }
-    catch (std::exception& e) {
-        errorMessage = "Exception. Failed to initialize server.";
-        std::cout << errorMessage << std::endl;
-        std::cout << e.what() << std::endl;
-        status = false;
+        if (ec) {
+            fail(ec, "open");
+            return;
+        }
     }
 
-    return status;
+    // Allow address reuse
+    _acceptor->set_option(net::socket_base::reuse_address(true), ec);
+    if (ec) {
+        fail(ec, "set_option");
+        return;
+    }
+
+    // Bind to the server address
+    _acceptor->bind(_endPoint, ec);
+    if (ec) {
+        std::cout << ec.message() << std::endl;
+        fail(ec, "bind");
+        return;
+    }
+
+    // Start listening for connections
+    _acceptor->listen(net::socket_base::max_listen_connections, ec);
+    if (ec) {
+        fail(ec, "listen");
+        return;
+    }
+
+    DoAccept();
+}
+
+void Server::DoAccept() {
+    // The new connection gets its own strand
+    _acceptor->async_accept(net::make_strand(_ioc), beast::bind_front_handler(&Server::OnAccept, shared_from_this()));
+}
+
+void Server::OnAccept(beast::error_code ec, tcp::socket socket) {
+    if (ec) {
+        fail(ec, "accept");
+    } else {
+        // Create the session and run it
+        std::make_shared<Session>(std::move(socket))->Run();
+    }
+
+    // Accept another connection
+    DoAccept();
 }
 
 bool Server::Start() {
@@ -66,18 +89,21 @@ bool Server::Start() {
         auto const address = net::ip::make_address("127.0.0.1");
         auto const port = static_cast<unsigned short>(8001);
 
-        net::io_context ioc(1);
-        //tcp::acceptor acceptor{*m_context, {address, port}};
+        boost::asio::io_context ioc;
+        _endPoint = tcp::endpoint{address, port};
+        _acceptor = std::make_shared<tcp::acceptor>(_ioc);
+
+        StartServerListener();
 
         // Create and launch a listening port
-        std::make_shared<Listener>(ioc, tcp::endpoint{address, port})->Run();
+        //std::make_shared<Listener>(*_ioc, tcp::endpoint{address, port})->Run();
 
-        ioc.run();
+        _ioc.run();
     }
     catch (const std::exception& e)
     {
         errorMessage = "Exception. Location: Server.cpp - Start(). ";
-        std::cerr << errorMessage << e.what() << std::endl;
+        std::cout << errorMessage << e.what() << std::endl;
         return EXIT_FAILURE;
     }
     return status;
