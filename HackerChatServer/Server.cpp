@@ -34,7 +34,7 @@ bool Server::InitializeServer() {
         m_socket = std::make_shared<tcp::socket>(*m_context);
         m_webSocketStream = std::make_shared<websocket::stream<tcp::socket>>(*m_context);
 
-        // Set a decorator to change the Server of the handshake
+        // Set a decorator to change the HackerChatServer of the handshake
         m_webSocketStream->set_option(websocket::stream_base::decorator(
                 [](websocket::response_type& res)
                 {
@@ -76,7 +76,7 @@ bool Server::Start() {
     }
     catch (const std::exception& e)
     {
-        errorMessage = "Exception. Location: Server.cpp - Start(). ";
+        errorMessage = "Exception. Location: HackerChatServer.cpp - Start(). ";
         std::cerr << errorMessage << e.what() << std::endl;
         return EXIT_FAILURE;
     }

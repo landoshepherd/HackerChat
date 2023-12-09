@@ -12,17 +12,19 @@ include_directories(/opt/devtools/boost_1.83.0/include
                     /opt/devtools/pugixml-1.14/src)
 
 add_executable(HackerChatServer main.cpp
-        Server/Server.cpp
-        Server/Server.hpp
+        HackerChatServer/Server.cpp
+        HackerChatServer/Server.hpp
         ${PUGIXML_CPP}
-        Server/Session.cpp
-        Server/Session.hpp
-        Server/Listener.cpp
-        Server/Listener.hpp)
+        HackerChatServer/Session.cpp
+        HackerChatServer/Session.hpp
+        HackerChatServer/Listener.cpp
+        HackerChatServer/Listener.hpp)
 
-add_executable(HackerChatClient Client/ClientMain.cpp
-        Client/Client.hpp
-        Client/Client.cpp
-        ${PUGIXML_CPP})
+add_executable(HackerChatClient HackerChatClient/ClientMain.cpp
+        HackerChatClient/HackerChatClient.hpp
+        HackerChatClient/HackerChatClient.cpp
+        ${PUGIXML_CPP}
+        WebSocket/WebSocketClient.cpp
+        WebSocket/WebSocketClient.hpp)
 
 add_executable(TestServer test_server.cpp)

@@ -29,7 +29,7 @@ void Session::OnRun() {
     // Set suggested timeout settings for the websocket
     ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
 
-    // Set a decorator to change the Server of the handshake
+    // Set a decorator to change the HackerChatServer of the handshake
     ws_.set_option(websocket::stream_base::decorator(
             [](websocket::response_type &res) {
                 res.set(http::field::server,

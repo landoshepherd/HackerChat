@@ -1,3 +1,10 @@
+//
+// Created by Lando Shepherd on 12/9/23.
+//
+
+#ifndef HACKERCHAT_WEBSOCKETCLIENT_HPP
+#define HACKERCHAT_WEBSOCKETCLIENT_HPP
+
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/strand.hpp>
@@ -13,27 +20,29 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-//-----------------------------------------------------------------------------
-// Sends a WebSocket message and prints the response
-class Client : public std::enable_shared_from_this<Client>
-{
+
+class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {
 private:
-    tcp::resolver resolver_;
-    websocket::stream<beast::tcp_stream> ws_;
-    beast::flat_buffer buffer_;
-    std::string host_;
-    std::string text_;
+    tcp::resolver _resolver;
+    websocket::stream<beast::tcp_stream> _ws;
+    beast::flat_buffer _buffer;
+    std::string _host;
+    std::string _port;
+    std::string _text;
 
 public:
     // Resolver and socket require an io_context
-    explicit Client(net::io_context& ioc);
-    void run(char const* host, char const* port, char const* text);
-    void on_resolve(beast::error_code ec, tcp::resolver::results_type results);
+    explicit WebSocketClient(net::io_context& ioc, const std::string& host, const std::string& port, const std::string& text);
+    void run();
+    void on_resolve(beast::error_code ec, const tcp::resolver::results_type& results);
     void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep);
     void on_handshake(beast::error_code ec);
     void on_write(beast::error_code ec, std::size_t bytes_transferred);
     void on_read(beast::error_code ec, std::size_t bytes_transferred);
     void on_close(beast::error_code ec);
     void fail(beast::error_code ec, char const* what);
-    static int Start();
+    //int Start();
 };
+
+
+#endif //HACKERCHAT_WEBSOCKETCLIENT_HPP
