@@ -23,6 +23,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {
 private:
+    net::io_context _ioc;
     tcp::resolver _resolver;
     websocket::stream<beast::tcp_stream> _ws;
     beast::flat_buffer _buffer;
@@ -32,11 +33,14 @@ private:
 
 public:
     // Resolver and socket require an io_context
-    explicit WebSocketClient(net::io_context& ioc, const std::string& host, const std::string& port, const std::string& text);
+    explicit WebSocketClient(const std::string& host, const std::string& port, const std::string& text);
+    ~WebSocketClient();
+    void _Start();
     void run();
     void on_resolve(beast::error_code ec, const tcp::resolver::results_type& results);
     void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep);
     void on_handshake(beast::error_code ec);
+    void _SendMessage(std::string& message);
     void on_write(beast::error_code ec, std::size_t bytes_transferred);
     void on_read(beast::error_code ec, std::size_t bytes_transferred);
     void on_close(beast::error_code ec);

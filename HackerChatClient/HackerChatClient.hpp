@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include "../WebSocket/WebSocketClient.hpp"
+
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
@@ -18,10 +20,12 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 class HackerChatClient
 {
 private:
-
+    std::shared_ptr<WebSocketClient> _webSocketClient;
+    bool _stop;
 public:
     // Resolver and socket require an io_context
-    HackerChatClient() = default;
+    HackerChatClient();
     ~HackerChatClient() = default;
     int Start();
+    //bool _SendMessage(std::string& message, std::string& statusMessage);
 };

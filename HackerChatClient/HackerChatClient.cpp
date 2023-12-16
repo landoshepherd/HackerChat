@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 #include "HackerChatClient.hpp"
 #include "../WebSocket/WebSocketClient.hpp"
 
@@ -15,16 +16,40 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+HackerChatClient::HackerChatClient():
+    _stop(false){
+}
+
 int HackerChatClient::Start() {
-    //TODO: Eventually, we will load a websocket config file here to configure the websocket client
-    auto const host = "127.0.01";
-    auto const port = "8001";
-    auto const text = "What up!";
+    try {
+        //TODO: Eventually, we will load a websocket config file here to configure the websocket client
+        auto const host = "127.0.0.1";
+        auto const port = "8001";
+        auto const text = "Hello!";
+        _stop = false; //Will need thread protection
 
-    net::io_context ioc;
-    std::make_shared<WebSocketClient>(ioc, host, port, text)->run();
+        net::io_context ioc;
+        _webSocketClient = std::make_shared<WebSocketClient>(host, port, text);
+        _webSocketClient->_Start();
 
-    ioc.run();
+    }
+    catch(std::exception ex){
+        std::cout << ex.what() << std::endl;
+    }
 
     return EXIT_SUCCESS;
 }
+
+//bool HackerChatClient::_SendMessage(std::string& message, std::string& statusMessage){
+//    bool rc = true;
+//
+//    try{
+//
+//    }
+//    catch(std::exception ex){
+//        rc = false;
+//    }
+//    return rc;
+//}
+
+

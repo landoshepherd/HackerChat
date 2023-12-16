@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 #include "WebSocketClient.hpp"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -20,13 +21,22 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 // Resolver and socket require an io_context
-WebSocketClient::WebSocketClient(net::io_context& ioc, const std::string& host, const std::string& port, const std::string& text):
-        _resolver (net::make_strand(ioc)),
-        _ws(net::make_strand(ioc)),
+WebSocketClient::WebSocketClient(const std::string& host, const std::string& port, const std::string& text):
+        _ioc(1),
+        _resolver (net::make_strand(_ioc)),
+        _ws(net::make_strand(_ioc)),
         _buffer(),
         _host(host),
         _port(port),
         _text(text){}
+
+WebSocketClient::~WebSocketClient() {
+}
+
+void WebSocketClient::_Start(){
+    run();
+    _ioc.run();
+}
 
 // Start the asynchronous operation
 void WebSocketClient::run() {
@@ -84,6 +94,11 @@ void WebSocketClient::on_handshake(beast::error_code ec) {
     _ws.async_write(net::buffer(_text), beast::bind_front_handler(&WebSocketClient::on_write, shared_from_this()));
 }
 
+void WebSocketClient::_SendMessage(std::string& message){
+    _text = message;
+    _ws.async_write(net::buffer(_text), beast::bind_front_handler(&WebSocketClient::on_write, shared_from_this()));
+}
+
 void WebSocketClient::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     boost::ignore_unused(bytes_transferred);
 
@@ -102,8 +117,16 @@ void WebSocketClient::on_read(beast::error_code ec, std::size_t bytes_transferre
         return fail(ec, "read");
     }
 
+    // The make_printable() function helps print a ConstBufferSequence
+    std::cout << beast::make_printable(_buffer.data()) << std::endl;
+
+    _buffer.clear();
+
+    std::string message = "Take this";
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    _SendMessage(message);
     // Close the WebSocket connection
-    _ws.async_close(websocket::close_code::normal, beast::bind_front_handler(&WebSocketClient::on_close, shared_from_this()));
+    //_ws.async_close(websocket::close_code::normal, beast::bind_front_handler(&WebSocketClient::_SendMessage, message, shared_from_this()));
 }
 
 void WebSocketClient::on_close(beast::error_code ec) {
@@ -112,29 +135,8 @@ void WebSocketClient::on_close(beast::error_code ec) {
     }
 
     // If we get here then the connection is closed gracefully
-
-    // The make_printable() function helps print a ConstBufferSequence
-    std::cout << beast::make_printable(_buffer.data()) << std::endl;
 }
 
 void WebSocketClient::fail(beast::error_code ec, char const* what){
     std::cout << what << ": " << ec.message() << "\n";
 }
-
-//int WebSocketClient::Start() {
-//    auto const host = "127.0.01";
-//    auto const port = "8001";
-//    auto const text = "What up!";
-//
-//    // The io_context is required for all I/O
-//    net::io_context ioc;
-//
-//    // Launch the asynchronous operation
-//    std::make_shared<WebSocketClient>(ioc)->run(host, port, text);
-//
-//    // Run the I/O service. The call will return when
-//    // the socket is closed.
-//    ioc.run();
-//
-//    return EXIT_SUCCESS;
-//}
