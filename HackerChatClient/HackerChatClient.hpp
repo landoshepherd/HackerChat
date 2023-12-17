@@ -27,5 +27,6 @@ public:
     HackerChatClient();
     ~HackerChatClient() = default;
     int Start();
+    void _Proc();
     //bool _SendMessage(std::string& message, std::string& statusMessage);
 };

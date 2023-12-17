@@ -6,6 +6,8 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/strand.hpp>
+#include <boost/asio.hpp>
+#include <boost/bind/bind.hpp>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -21,10 +23,10 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 // Resolver and socket require an io_context
-WebSocketClient::WebSocketClient(const std::string& host, const std::string& port, const std::string& text):
-        _ioc(1),
+WebSocketClient::WebSocketClient(net::io_context& _ioc, const std::string& host, const std::string& port, const std::string& text):
         _resolver (net::make_strand(_ioc)),
         _ws(net::make_strand(_ioc)),
+        _timer(_ioc, boost::asio::chrono::seconds(0)),
         _buffer(),
         _host(host),
         _port(port),
@@ -35,7 +37,9 @@ WebSocketClient::~WebSocketClient() {
 
 void WebSocketClient::_Start(){
     run();
-    _ioc.run();
+
+    beast::error_code ec;
+    _KeepAlive(ec);
 }
 
 // Start the asynchronous operation
@@ -91,7 +95,8 @@ void WebSocketClient::on_handshake(beast::error_code ec) {
     }
 
     // Send the message
-    _ws.async_write(net::buffer(_text), beast::bind_front_handler(&WebSocketClient::on_write, shared_from_this()));
+    //_ws.async_write(net::buffer(_text), beast::bind_front_handler(&WebSocketClient::on_write, shared_from_this()));
+    std::cout << "WebSocketClient initialized" << std::endl;
 }
 
 void WebSocketClient::_SendMessage(std::string& message){
@@ -121,12 +126,6 @@ void WebSocketClient::on_read(beast::error_code ec, std::size_t bytes_transferre
     std::cout << beast::make_printable(_buffer.data()) << std::endl;
 
     _buffer.clear();
-
-    std::string message = "Take this";
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-    _SendMessage(message);
-    // Close the WebSocket connection
-    //_ws.async_close(websocket::close_code::normal, beast::bind_front_handler(&WebSocketClient::_SendMessage, message, shared_from_this()));
 }
 
 void WebSocketClient::on_close(beast::error_code ec) {
@@ -139,4 +138,9 @@ void WebSocketClient::on_close(beast::error_code ec) {
 
 void WebSocketClient::fail(beast::error_code ec, char const* what){
     std::cout << what << ": " << ec.message() << "\n";
+}
+
+void WebSocketClient::_KeepAlive(beast::error_code ec){
+    _timer.expires_at(_timer.expiry() + boost::asio::chrono::seconds(1));
+    _timer.async_wait(beast::bind_front_handler(&WebSocketClient::_KeepAlive, shared_from_this()));
 }

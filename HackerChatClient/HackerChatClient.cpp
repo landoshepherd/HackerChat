@@ -29,9 +29,15 @@ int HackerChatClient::Start() {
         _stop = false; //Will need thread protection
 
         net::io_context ioc;
-        _webSocketClient = std::make_shared<WebSocketClient>(host, port, text);
+        _webSocketClient = std::make_shared<WebSocketClient>(ioc, host, port, text);
         _webSocketClient->_Start();
 
+        std::thread userThread([this](){
+            _Proc();
+        });
+
+        ioc.run();
+        userThread.join();
     }
     catch(std::exception ex){
         std::cout << ex.what() << std::endl;
@@ -40,16 +46,12 @@ int HackerChatClient::Start() {
     return EXIT_SUCCESS;
 }
 
-//bool HackerChatClient::_SendMessage(std::string& message, std::string& statusMessage){
-//    bool rc = true;
-//
-//    try{
-//
-//    }
-//    catch(std::exception ex){
-//        rc = false;
-//    }
-//    return rc;
-//}
+void HackerChatClient::_Proc(){
+    std::string message;
+    while(!_stop){
+        std::getline(std::cin, message);
+        this->_webSocketClient->_SendMessage(message);
+    }
+}
 
 
