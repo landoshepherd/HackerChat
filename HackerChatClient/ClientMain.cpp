@@ -2,6 +2,6 @@
 
 int main(){
     HackerChatClient client;
-    client.Start();
+    client._Start();
     return 0;
 }

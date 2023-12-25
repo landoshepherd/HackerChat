@@ -36,7 +36,7 @@ Listener::Listener(net::io_context &ioc, tcp::endpoint endpoint)
         return;
     }
 
-    // Start listening for connections
+    // _Start listening for connections
     acceptor_.listen(net::socket_base::max_listen_connections, ec);
     if (ec) {
         fail(ec, "listen");
@@ -44,7 +44,7 @@ Listener::Listener(net::io_context &ioc, tcp::endpoint endpoint)
     }
 }
 
-// Start accepting incoming connections
+// _Start accepting incoming connections
 void Listener::Run() {
     DoAccept();
 }

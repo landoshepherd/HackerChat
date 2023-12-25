@@ -76,7 +76,7 @@ bool Server::Start() {
     }
     catch (const std::exception& e)
     {
-        errorMessage = "Exception. Location: HackerChatServer.cpp - Start(). ";
+        errorMessage = "Exception. Location: HackerChatServer.cpp - _Start(). ";
         std::cerr << errorMessage << e.what() << std::endl;
         return EXIT_FAILURE;
     }

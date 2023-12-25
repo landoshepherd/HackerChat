@@ -20,7 +20,7 @@ HackerChatClient::HackerChatClient():
     _stop(false){
 }
 
-int HackerChatClient::Start() {
+int HackerChatClient::_Start() {
     try {
         //TODO: Eventually, we will load a websocket config file here to configure the websocket client
         auto const host = "127.0.0.1";

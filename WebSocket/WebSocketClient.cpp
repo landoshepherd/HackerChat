@@ -42,7 +42,7 @@ void WebSocketClient::_Start(){
     _KeepAlive(ec);
 }
 
-// Start the asynchronous operation
+// _Start the asynchronous operation
 void WebSocketClient::run() {
     // Look up the domain name
     _resolver.async_resolve(_host, _port, beast::bind_front_handler(&WebSocketClient::on_resolve, shared_from_this()));
