@@ -24,7 +24,7 @@ void Session::Run() {
     net::dispatch(ws_.get_executor(), beast::bind_front_handler(&Session::OnRun, shared_from_this()));
 }
 
-// Start the asynchronous operation
+// _Start the asynchronous operation
 void Session::OnRun() {
     // Set suggested timeout settings for the websocket
     ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));

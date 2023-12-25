@@ -5,6 +5,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include "/opt/devtools/rapidjson/rapidjson.h"
 #include <string>
 
 #include "../WebSocket/WebSocketClient.hpp"
@@ -26,7 +27,7 @@ public:
     // Resolver and socket require an io_context
     HackerChatClient();
     ~HackerChatClient() = default;
-    int Start();
+    int _Start();
     void _Proc();
     //bool _SendMessage(std::string& message, std::string& statusMessage);
 };

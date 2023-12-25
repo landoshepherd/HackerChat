@@ -3,6 +3,6 @@
 
 int main() {
     Server server;
-    server.Start();
+    server._Start();
     return 0;
 }
