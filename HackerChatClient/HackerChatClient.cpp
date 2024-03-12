@@ -1,14 +1,18 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/trivial.hpp>
 #include <boost/asio/strand.hpp>
 #include <cstdlib>
 #include <functional>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
 #include "HackerChatClient.hpp"
-#include "../WebSocket/WebSocketClient.hpp"
+
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -17,27 +21,71 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 HackerChatClient::HackerChatClient():
+    _host(),
+    _port(),
+    _deviceId(),
     _stop(false){
+}
+
+bool HackerChatClient::_Load(const std::string& configFilename){
+    bool rc = true;
+
+    BOOST_LOG_TRIVIAL(trace) << "Loading chat client config file...\n";
+    if (std::filesystem::exists(configFilename)){
+        std::fstream filestream;
+        std::stringstream configBuffer;
+        rapidjson::Document doc;
+
+        filestream.open(configFilename);
+
+        if (filestream.is_open()){
+            configBuffer << filestream.rdbuf();
+            doc.Parse(configBuffer.str().c_str());
+            _host = doc["_host"].GetString();
+            _port = doc["_port"].GetString();
+            _deviceId = doc["_deviceId"].GetString();
+
+            BOOST_LOG_TRIVIAL(trace) << "Successfully loading chat client configuration.";
+        }
+        else{
+            rc = false;
+            BOOST_LOG_TRIVIAL(error) << "Failed to open HackerChatClient config file.";
+        }
+    }
+    else{
+        rc = false;
+        BOOST_LOG_TRIVIAL(error) << "HackerChatClient config file does not exists.";
+    }
+
+    return rc;
 }
 
 int HackerChatClient::_Start() {
     try {
-        //TODO: Eventually, we will load a websocket config file here to configure the websocket client
-        auto const host = "127.0.0.1";
-        auto const port = "8001";
-        auto const text = "Hello!";
-        _stop = false; //Will need thread protection
+        // Set up logger
+        boost::log::add_console_log(std::clog, boost::log::keywords::format = "%TimeStamp% [%Severity%]: %Message%");
 
-        net::io_context ioc;
-        _webSocketClient = std::make_shared<WebSocketClient>(ioc, host, port, text);
-        _webSocketClient->_Start();
+        std::filesystem::path configPath = std::filesystem::current_path();
+        configPath = configPath.parent_path();
+        std::string configPathString = configPath.string();
+        configPathString.append("/HackerChatClient/HCClientConfig.json");
 
-        std::thread userThread([this](){
-            _Proc();
-        });
+        if (_Load(configPathString)) {
 
-        ioc.run();
-        userThread.join();
+            auto const text = "Hello!";
+            _stop = false; //Will need thread protection
+
+            net::io_context ioc;
+            _webSocketClient = std::make_shared<WebSocketClient>(ioc, _host, _port, text);
+            _webSocketClient->_Start();
+
+            std::thread userThread([this]() {
+                _Proc();
+            });
+
+            ioc.run();
+            userThread.join();
+        }
     }
     catch(std::exception ex){
         std::cout << ex.what() << std::endl;
