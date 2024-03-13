@@ -21,7 +21,7 @@ public:
     ~Server();
     bool InitializeServer();
     void do_session(std::vector<tcp::socket>& connections);
-    bool Start();
+    bool _Start();
 
 private:
     std::shared_ptr<boost::asio::io_context> m_context;

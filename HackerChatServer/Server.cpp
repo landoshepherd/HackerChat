@@ -54,7 +54,7 @@ bool Server::InitializeServer() {
     return status;
 }
 
-bool Server::Start() {
+bool Server::_Start() {
     bool status = true;
     std::string errorMessage;
     beast::flat_buffer buffer;

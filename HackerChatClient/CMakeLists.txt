@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
-project(HackerChat)
+project(HackerChatClient)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -14,24 +14,13 @@ include_directories(/opt/devtools/boost_1.83.0/include
 
 find_package(Boost REQUIRED COMPONENTS log)
 
-add_executable(HackerChatServer main.cpp
-        HackerChatServer/Server.cpp
-        HackerChatServer/Server.hpp
-        ${RAPID_JSON_H}
-        ${PUGIXML_CPP}
-        HackerChatServer/Session.cpp
-        HackerChatServer/Session.hpp
-        HackerChatServer/Listener.cpp
-        HackerChatServer/Listener.hpp)
-
-add_executable(HackerChatClient HackerChatClient/ClientMain.cpp
-        HackerChatClient/HackerChatClient.hpp
-        HackerChatClient/HackerChatClient.cpp
+add_executable(HackerChatClient
+        main.cpp
+        HackerChatClient.hpp
+        HackerChatClient.cpp
         ${RAPID_JSON_H}
         ${PUGIXML_CPP}
         WebSocket/WebSocketClient.cpp
         WebSocket/WebSocketClient.hpp)
 
 target_link_libraries(HackerChatClient Boost::log)
-
-add_executable(TestServer test_server.cpp)

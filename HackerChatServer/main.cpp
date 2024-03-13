@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Server/Server.hpp"
+#include "Server.hpp"
 
 int main() {
     Server server;
