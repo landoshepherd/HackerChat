@@ -2,3 +2,6 @@ build
 .idea
 cmake-build-debug
 .DS_Store
+CMakeFiles/
+CMakeCache.txt
+*_xcodeproj/

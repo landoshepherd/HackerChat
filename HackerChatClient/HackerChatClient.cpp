@@ -1,8 +1,5 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/utility/setup/console.hpp>
-#include <boost/log/trivial.hpp>
 #include <boost/asio/strand.hpp>
 #include <cstdlib>
 #include <functional>
@@ -30,7 +27,7 @@ HackerChatClient::HackerChatClient():
 bool HackerChatClient::_Load(const std::string& configFilename){
     bool rc = true;
 
-    BOOST_LOG_TRIVIAL(trace) << "Loading chat client config file...\n";
+    //BOOST_LOG_TRIVIAL(trace) << "Loading chat client config file...\n";
     if (std::filesystem::exists(configFilename)){
         std::fstream filestream;
         std::stringstream configBuffer;
@@ -45,16 +42,16 @@ bool HackerChatClient::_Load(const std::string& configFilename){
             _port = doc["_port"].GetString();
             _deviceId = doc["_deviceId"].GetString();
 
-            BOOST_LOG_TRIVIAL(trace) << "Successfully loading chat client configuration.";
+            //spdlog::warn("Successfully loading chat client configuration.");
         }
         else{
             rc = false;
-            BOOST_LOG_TRIVIAL(error) << "Failed to open HackerChatClient config file.";
+            //BOOST_LOG_TRIVIAL(error) << "Failed to open HackerChatClient config file.";
         }
     }
     else{
         rc = false;
-        BOOST_LOG_TRIVIAL(error) << "HackerChatClient config file does not exists.";
+        //BOOST_LOG_TRIVIAL(error) << "HackerChatClient config file does not exists.";
     }
 
     return rc;
@@ -63,15 +60,13 @@ bool HackerChatClient::_Load(const std::string& configFilename){
 int HackerChatClient::_Start() {
     try {
         // Set up logger
-        boost::log::add_console_log(std::clog, boost::log::keywords::format = "%TimeStamp% [%Severity%]: %Message%");
+        //boost::log::add_console_log(std::clog, boost::log::keywords::format = "%TimeStamp% [%Severity%]: %Message%");
 
         std::filesystem::path configPath = std::filesystem::current_path();
-        configPath = configPath.parent_path();
         std::string configPathString = configPath.string();
-        configPathString.append("/HackerChatClient/HCClientConfig.json");
+        configPathString.append("/configs/HCClientConfig.json");
 
         if (_Load(configPathString)) {
-
             auto const text = "Hello!";
             _stop = false; //Will need thread protection
 
@@ -99,6 +94,7 @@ void HackerChatClient::_Proc(){
     while(!_stop){
         std::getline(std::cin, message);
         this->_webSocketClient->_SendMessage(message);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
 
