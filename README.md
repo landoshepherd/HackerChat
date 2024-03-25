@@ -55,16 +55,21 @@ $ make
 - Open two separate terminals
 - In one terminal navigate to HackerChatServer executable and run program
 ```bash
-$ cd HackerChat/HackerChatServer/build/bin
+$ cd HackerChat/HackerChatServer/build
 $ ./HackerChatServer
 ```
 - In the other terminal navigate to HackerChatClient executable and run program
 ```bash
-$ cd HackerChat/HackerChatClient/build/bin
+$ cd HackerChat/HackerChatClient/build
 $ ./HackerChatClient
 ```
 - In the HackerChatClient terminal, type in a message and press enter.
+- ![Screenshot 2024-03-24 at 9 38 01 PM](https://github.com/landoshepherd/HackerChat/assets/30390801/795b55ce-9943-4281-ad32-b4b9f8b1db7b)
+
 - The same message should appear in the HackerChatServer terminal and echoed back to the HackerChatClient terminal.
+- ![Screenshot 2024-03-24 at 9 34 52 PM](https://github.com/landoshepherd/HackerChat/assets/30390801/810aadec-e4eb-4487-9275-e9a1efa64986)
+- ![Screenshot 2024-03-24 at 9 34 35 PM](https://github.com/landoshepherd/HackerChat/assets/30390801/b0406cc5-992e-421a-8de6-b3e4db659af3)
+
 ## Features
 - TBD
 ## Contributing
