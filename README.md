@@ -75,4 +75,4 @@ $ ./HackerChatClient
 ## Contributing
 - TBD
 ## License
-- Comming soon
+- MIT License
