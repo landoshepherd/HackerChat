@@ -1,5 +1,5 @@
 #include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
+//#include <boost/beast/websocket.hpp>
 #include <boost/asio/strand.hpp>
 #include <cstdlib>
 #include <functional>
@@ -10,7 +10,6 @@
 #include <string>
 
 #include "WebSocket/WebSocketClient.hpp"
-//#include "spdlog/spdlog.h"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
