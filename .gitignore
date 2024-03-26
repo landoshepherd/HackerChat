@@ -5,3 +5,4 @@ cmake-build-debug
 CMakeFiles/
 CMakeCache.txt
 *_xcodeproj/
+Makefile

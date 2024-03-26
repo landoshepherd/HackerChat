@@ -47,11 +47,13 @@ bool HackerChatClient::_Load(const std::string& configFilename){
         else{
             rc = false;
             //BOOST_LOG_TRIVIAL(error) << "Failed to open HackerChatClient config file.";
+            std::cout << "Failed to load HackerChatClient config file." << std::endl;
         }
     }
     else{
         rc = false;
-        //BOOST_LOG_TRIVIAL(error) << "HackerChatClient config file does not exists.";
+        //BOOST_LOG_TRIVIAL(error) << "HackerChatClient config file does not exist.";
+        std::cout << "HackerChatClient config file not found." << std::endl;
     }
 
     return rc;
@@ -63,6 +65,7 @@ int HackerChatClient::_Start() {
         //boost::log::add_console_log(std::clog, boost::log::keywords::format = "%TimeStamp% [%Severity%]: %Message%");
 
         std::filesystem::path configPath = std::filesystem::current_path();
+        configPath = configPath.parent_path();
         std::string configPathString = configPath.string();
         configPathString.append("/configs/HCClientConfig.json");
 
