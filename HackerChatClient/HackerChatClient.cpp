@@ -1,3 +1,5 @@
+
+#include <boost/log/trivial.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/strand.hpp>
@@ -9,7 +11,6 @@
 #include <string>
 #include <thread>
 #include "HackerChatClient.hpp"
-
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -24,16 +25,17 @@ HackerChatClient::HackerChatClient():
     _stop(false){
 }
 
-bool HackerChatClient::_Load(const std::string& configFilename){
+bool HackerChatClient::_Load(const std::string& configFilePath){
     bool rc = true;
 
-    //BOOST_LOG_TRIVIAL(trace) << "Loading chat client config file...\n";
-    if (std::filesystem::exists(configFilename)){
+    BOOST_LOG_TRIVIAL(trace) << "Loading chat client config file...";
+
+    if (std::filesystem::exists(configFilePath)){
         std::fstream filestream;
         std::stringstream configBuffer;
         rapidjson::Document doc;
 
-        filestream.open(configFilename);
+        filestream.open(configFilePath);
 
         if (filestream.is_open()){
             configBuffer << filestream.rdbuf();
@@ -42,18 +44,16 @@ bool HackerChatClient::_Load(const std::string& configFilename){
             _port = doc["_port"].GetString();
             _deviceId = doc["_deviceId"].GetString();
 
-            //spdlog::warn("Successfully loading chat client configuration.");
+            BOOST_LOG_TRIVIAL(trace) << "Successfully loading chat client configuration.";
         }
         else{
             rc = false;
-            //BOOST_LOG_TRIVIAL(error) << "Failed to open HackerChatClient config file.";
-            std::cout << "Failed to load HackerChatClient config file." << std::endl;
+            BOOST_LOG_TRIVIAL(error) << "Failed to load HackerChatClient config file.";
         }
     }
     else{
         rc = false;
-        //BOOST_LOG_TRIVIAL(error) << "HackerChatClient config file does not exist.";
-        std::cout << "HackerChatClient config file not found." << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "HackerChatClient config file not found.";
     }
 
     return rc;
@@ -61,8 +61,8 @@ bool HackerChatClient::_Load(const std::string& configFilename){
 
 int HackerChatClient::_Start() {
     try {
-        // Set up logger
-        //boost::log::add_console_log(std::clog, boost::log::keywords::format = "%TimeStamp% [%Severity%]: %Message%");
+        //NOTE: Must configure IDE to store cmake build artifacts in build directory. This is temporary until
+        //We configure the CMakeList.txt to do this automatically
 
         std::filesystem::path configPath = std::filesystem::current_path();
         configPath = configPath.parent_path();
