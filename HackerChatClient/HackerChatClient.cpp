@@ -63,7 +63,6 @@ int HackerChatClient::_Start() {
     try {
         //NOTE: Must configure IDE to store cmake build artifacts in build directory. This is temporary until
         //We configure the CMakeList.txt to do this automatically
-
         std::filesystem::path configPath = std::filesystem::current_path();
         configPath = configPath.parent_path();
         std::string configPathString = configPath.string();
