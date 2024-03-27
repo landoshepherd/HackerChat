@@ -24,10 +24,9 @@ if (NOT RAPID_JSON_H)
     return()
 endif()
 
-include_directories(/opt/devtools/boost_1.83.0/include
-        /opt/devtools/pugixml-1.14/src
-        /opt/devtools
-        /opt/devtools/spdlog)
+include_directories(${EXTERNAL_FILES_DIR}/boost_1.83.0/include
+        ${EXTERNAL_FILES_DIR}/pugixml-1.14/src
+        ${EXTERNAL_FILES_DIR})
 
 # Find ExampleLib
 find_package(Boost 1.83.0 COMPONENTS log)
