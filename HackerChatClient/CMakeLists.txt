@@ -9,7 +9,8 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 
 # Check if the external files directory is provided
 if(NOT EXTERNAL_FILES_DIR)
-    message(FATAL_ERROR "Please provide the path to the external files directory using the EXTERNAL_FILES_DIR environment variable or by passing it as a command-line argument.")
+    message(FATAL_ERROR "Please provide the path to the external files directory using the
+    EXTERNAL_FILES_DIR environment variable or by passing it as a command-line argument.")
 endif()
 
 file(GLOB_RECURSE PUGIXML_CPP "${EXTERNAL_FILES_DIR}/*/pugixml.cpp")
@@ -33,13 +34,6 @@ find_package(Boost 1.83.0 COMPONENTS log)
 
 if(NOT Boost_FOUND)
     message(FATAL_ERROR "Boost libraries not found. Terminating.")
-endif()
-
-# Define your CMake variables
-file(GLOB_RECURSE CONFIG_PATH "${CMAKE_HOME_DIRECTORY}/configs/HCClientConfig.json")
-if(NOT CONFIG_PATH)
-    message(FATAL_ERROR "WebSocket config file not found. Terminating.")
-    return()
 endif()
 
 include_directories(${Boost_INCLUDE_DIRS})

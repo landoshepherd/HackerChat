@@ -1,8 +1,7 @@
 #include <iostream>
 #include "HackerChatClient.hpp"
 
-int main(){
-    //std::cout << "Hello world" << std::endl;
+int main(int argc, char* argv[]){
     HackerChatClient client;
     client._Start();
     return 0;

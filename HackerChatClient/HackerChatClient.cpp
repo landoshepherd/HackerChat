@@ -61,12 +61,14 @@ bool HackerChatClient::_Load(const std::string& configFilePath){
 
 int HackerChatClient::_Start() {
     try {
-        //NOTE: Must configure IDE to store cmake build artifacts in build directory. This is temporary until
-        //We configure the CMakeList.txt to do this automatically
-        std::filesystem::path configPath = std::filesystem::current_path();
-        configPath = configPath.parent_path();
-        std::string configPathString = configPath.string();
-        configPathString.append("/configs/HCClientConfig.json");
+        const char* configDir = std::getenv("HACKERCHAT_CLIENT_CONFIG_DIR");
+
+        if(configDir == nullptr){
+            BOOST_LOG_TRIVIAL(error) << "HACKERCHAT_CLIENT_CONFIG_DIR environment variable not defined. Terminating program.";
+        }
+
+        std::string configPathString(configDir);
+        configPathString.append("/HCClientConfig.json");
 
         if (_Load(configPathString)) {
             auto const text = "Hello!";
