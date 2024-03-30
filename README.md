@@ -27,6 +27,7 @@ HackerChat is messaging platform the nostalgic computer geek. It is a simple cha
 ```bash
 $ git clone https://github.com/landoshepherd/HackerChat.git
 ```
+  ### HackerChatServer
   - Navigate to HackerChatServer directory
 ```bash
 $ cd HackerChat/HackerChatServer
@@ -40,13 +41,21 @@ $ cmake -B build/ ./
 $ cd HackerChat/HackerChatServer/build
 $ make
 ```
+  ### HackerChatClient
 - Navigate to HackerChatClient directory
 ```bash
 $ cd HackerChat/HackerChatClient
 ```
   - Run CMake to create Makefile
+  - Note: External includes and libraries should be at this location. This is where CMake will find all of the files necessary to build the makefile.
+  - The "build" directory is where the cmake build artifacts, including the makefile and eventually the executable, will be located.
 ```bash
-$ cmake -B build/ ./
+$ cmake -DEXTERNAL_FILES_DIR=/path/to/external/files -B build/ ./
+```
+- Define HACKERCHAT_CLIENT_CONFIG_DIR environment variable
+- To run the HackerChatClient successfully, it needs to know where the HCClientConfig.json file is located. This is where the websocket and all other configurations will be stored.
+```bash
+$ export HACKERCHAT_CLIENT_CONFIG_DIR=/path/to/config/dir
 ```
   - Navigate to build directory and run make command to build HackerChatClient executable
 ```bash
