@@ -1,5 +1,8 @@
 
 #include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/strand.hpp>
@@ -19,6 +22,7 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 HackerChatClient::HackerChatClient():
+    _rootDir(),
     _host(),
     _port(),
     _deviceId(),
@@ -61,16 +65,19 @@ bool HackerChatClient::_Load(const std::string& configFilePath){
 
 int HackerChatClient::_Start() {
     try {
-        const char* configDir = std::getenv("HACKERCHAT_CLIENT_CONFIG_DIR");
+        _InitializeLogging();
 
-        if(configDir == nullptr){
-            BOOST_LOG_TRIVIAL(error) << "HACKERCHAT_CLIENT_CONFIG_DIR environment variable not defined. Terminating program.";
+        char* rootDir = std::getenv("HACKERCHAT_CLIENT_ROOT");
+        _rootDir = rootDir;
+        if(_rootDir.empty()){
+            BOOST_LOG_TRIVIAL(error) << "HACKERCHAT_CLIENT_ROOT environment variable not defined. Terminating program.";
         }
 
-        std::string configPathString(configDir);
-        configPathString.append("/HCClientConfig.json");
+        std::string configDirPath = _rootDir.append("/configs/HCClientConfig.json");
+        /*std::string configPathString(configDir);
+        configPathString.append("/HCClientConfig.json");*/
 
-        if (_Load(configPathString)) {
+        if (_Load(configDirPath)) {
             auto const text = "Hello!";
             _stop = false; //Will need thread protection
 
@@ -100,6 +107,18 @@ void HackerChatClient::_Proc(){
         this->_webSocketClient->_SendMessage(message);
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+}
+
+void HackerChatClient::_InitializeLogging() {
+    // Set up logging to file
+    boost::log::add_file_log(
+            boost::log::keywords::file_name = "sample.log",
+            boost::log::keywords::format = "[%TimeStamp%]: %Message%"
+    );
+
+    boost::log::core::get()->set_filter(
+            boost::log::trivial::severity >= boost::log::trivial::info
+    );
 }
 
 
