@@ -23,6 +23,7 @@ class HackerChatClient
 {
 private:
     std::shared_ptr<WebSocketClient> _webSocketClient;
+    std::string _rootDir;
     std::string _host;
     std::string _port;
     std::string _deviceId;
@@ -34,5 +35,6 @@ public:
     bool _Load(const std::string& configFilename);
     int _Start();
     void _Proc();
+    void _InitializeLogging();
     //bool _SendMessage(std::string& message, std::string& statusMessage);
 };
