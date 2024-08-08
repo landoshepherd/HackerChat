@@ -1,6 +1,6 @@
 # HackerChat
 
-HackerChat is messaging platform the nostalgic computer geek. It is a simple chat client that allows user to chat with other users all within the terminal.    
+HackerChat is messaging platform for the nostalgic computer geek. It is a simple chat client that allows user to chat with other users all within the terminal.    
   
   ![Static Badge](https://img.shields.io/badge/Project%20Stage-Experimental-yellow)
 
