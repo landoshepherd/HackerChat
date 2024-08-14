@@ -1,4 +1,3 @@
-#include <iostream>
 #include "HackerChatClient.hpp"
 
 int main(int argc, char* argv[]){
