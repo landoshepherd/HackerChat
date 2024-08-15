@@ -13,6 +13,10 @@ include_directories(${EXTERNAL_FILES_DIR}/boost_1.83.0/include
                     ${EXTERNAL_FILES_DIR}/rapidjson)
 
 add_library(HackerChatCommon STATIC library.cpp
-        HCCommonBase/HCCommonBase.cpp
-        HCCommonBase/HCCommonBase.h
+        HCCommonBaseCommand/HCCommonBaseCommand.cpp
+        HCCommonBaseCommand/HCCommonBaseCommand.h
 )
+
+add_executable(HackerChatTestApp
+                HCCommonBaseCommand/HCCommonBaseCommand.cpp
+                main.cpp)
