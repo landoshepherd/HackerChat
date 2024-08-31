@@ -1,7 +1,6 @@
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
-//#include <boost/log/utility/setup/file.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/strand.hpp>
@@ -13,6 +12,9 @@
 #include <string>
 #include <thread>
 #include "HackerChatClient.hpp"
+#include "rapidjson.h"
+#include "document.h"
+#include "HCCommonBaseCommand.h"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
