@@ -5,11 +5,10 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include "/opt/devtools/rapidjson/rapidjson.h"
-#include "/opt/devtools/rapidjson/document.h"
+
 #include <string>
 
-#include "../../../../Desktop/HackerChatClient/WebSocket/WebSocketClient.hpp"
+#include "WebSocket/WebSocketClient.hpp"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
