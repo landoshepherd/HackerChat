@@ -15,6 +15,9 @@
 #include "rapidjson.h"
 #include "document.h"
 #include "HCCommonBaseCommand.h"
+#include <boost/uuid/string_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_serialize.hpp>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -91,7 +94,13 @@ void HackerChatClient::_Proc(){
     std::string message;
     while(!_stop){
         std::getline(std::cin, message);
-        this->_webSocketClient->_SendMessage(message);
+        // Create a message command
+        boost::uuids::random_generator gen;
+        boost::uuids::uuid source = gen();
+        boost::uuids::uuid destination = gen();
+        HCCommonBaseCommand command(source, destination, message);
+        std::string commandAsString = HCCommonBaseCommand::_serialize(command);
+        this->_webSocketClient->_SendMessage(commandAsString);
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

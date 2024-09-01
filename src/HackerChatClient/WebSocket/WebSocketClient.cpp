@@ -122,6 +122,7 @@ void WebSocketClient::on_read(beast::error_code ec, std::size_t bytes_transferre
         return fail(ec, "read");
     }
 
+    // We should probably put some code here to put the message received on a queue
     // The make_printable() function helps print a ConstBufferSequence
     std::cout << beast::make_printable(_buffer.data()) << std::endl;
 

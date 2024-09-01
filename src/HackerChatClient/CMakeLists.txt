@@ -41,7 +41,7 @@ add_executable(HackerChatClient
 
 # Link boost libraries with executables
 target_link_libraries(HackerChatClient ${Boost_LIBRARIES}
-                    ${HACKERCHAT_MAIN_DIR}/HackerChatCommon/HCCommonBaseCommand/lib/libHackerChatCommon.a)
+        ${EXTERNAL_LIBRARIES}/libHackerChatCommon.a)
 
 
 

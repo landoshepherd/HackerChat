@@ -37,4 +37,9 @@ add_library(HackerChatCommon STATIC
 target_link_libraries(HackerChatCommon ${Boost_LIBRARIES})
 
 # Move compiled library to lib directory
-file(RENAME build/libHackerChatCommon.a HCCommonBaseCommand/lib/libHackerChatCommon.a)
+if (EXISTS "${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a")
+    file(RENAME ${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a ${CMAKE_SOURCE_DIR}/HCCommonBaseCommand/lib/libHackerChatCommon.a)
+    file(REMOVE ${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a)
+else()
+    message("Failed to build HackerChatCommon library.")
+endif()
