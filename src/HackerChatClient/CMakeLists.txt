@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 project(HackerChatClient)
 set(HACKER_CHAT_MAIN_DIR ..)
-
 set(CMAKE_CXX_STANDARD 17)
 
 set(Boost_USE_STATIC_LIBS ON)
@@ -12,6 +11,10 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 if(NOT EXTERNAL_LIBRARIES)
     message(FATAL_ERROR "Please provide the path to the external libraries directory using the
     EXTERNAL_LIBRARIES environment variable or by passing it as a command-line argument.")
+endif()
+
+if(NOT HACKERCHAT_LIBRARIES)
+    message(FATAL_ERROR "Provide the path to the HackerChat libraries")
 endif()
 
 # Find rapid json header files
@@ -31,17 +34,17 @@ endif()
 # Include boost header files
 include_directories(${Boost_INCLUDE_DIRS}
                     ${EXTERNAL_LIBRARIES}/rapidjson
-                    ../HackerChatCommon/HCCommonBaseCommand/include)
+                    ${HACKERCHAT_LIBRARIES}/include)
 
 # Generate the HackerChatClient executable
 add_executable(HackerChatClient
         HackerChatClient_main.cpp
-        HackerChatClient.cpp
-        WebSocket/WebSocketClient.cpp)
+        HackerChatClient.cpp)
 
 # Link boost libraries with executables
 target_link_libraries(HackerChatClient ${Boost_LIBRARIES}
-        ${EXTERNAL_LIBRARIES}/libHackerChatCommon.a)
+        ${HACKERCHAT_LIBRARIES}/lib/HCCommonBaseCommand/libHackerChatCommon.a
+        ${HACKERCHAT_LIBRARIES}/lib/WebSocket/libWebSocket.a)
 
 
 

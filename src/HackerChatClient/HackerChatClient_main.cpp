@@ -2,6 +2,6 @@
 
 int main(int argc, char* argv[]){
     HackerChatClient client;
-    client._Start();
+    client.Start();
     return 0;
 }

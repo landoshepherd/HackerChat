@@ -5,8 +5,8 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-
 #include <string>
+#include <mutex>
 
 #include "WebSocket/WebSocketClient.hpp"
 
@@ -21,19 +21,22 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 class HackerChatClient
 {
 private:
-    std::shared_ptr<WebSocketClient> _webSocketClient;
-    std::string _rootDir;
-    std::string _host;
-    std::string _port;
-    std::string _deviceId;
-    bool _stop;
+    std::shared_ptr<WebSocketClient> webSocketClient;
+    std::string rootDir;
+    std::string host;
+    std::string port;
+    std::string deviceId;
+    bool stop;
+    std::queue<HCCommonBaseCommand> newMessages;
+    std::shared_ptr<std::mutex> procLock;
 public:
     // Resolver and socket require an io_context
     HackerChatClient();
     ~HackerChatClient() = default;
-    bool _Load(const std::string& configFilename);
-    int _Start();
-    void _Proc();
-    void _InitializeLogging();
+    bool Load(const std::string& configFilename);
+    int Start();
+    void ProcessMessageQueue();
+    void Proc();
+    void InitializeLogging();
     //bool _SendMessage(std::string& message, std::string& statusMessage);
 };
