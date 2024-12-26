@@ -13,6 +13,10 @@ if(NOT EXTERNAL_LIBRARIES)
     EXTERNAL_DEPENDENCIES environment variable or by passing it as a command-line argument.")
 endif()
 
+if(NOT HACKERCHAT_LIBRARIES)
+    message(FATAL_ERROR "Provide the path to the HackerChat libraries")
+endif()
+
 file(GLOB_RECURSE RAPID_JSON_H "${EXTERNAL_LIBRARIES}/*/rapidjson.h")
 if (NOT RAPID_JSON_H)
     message(FATAL_ERROR "rapidjson.h not found. Terminating.")
@@ -37,4 +41,16 @@ add_library(HackerChatCommon STATIC
 target_link_libraries(HackerChatCommon ${Boost_LIBRARIES})
 
 # Move compiled library to lib directory
-file(RENAME build/libHackerChatCommon.a HCCommonBaseCommand/lib/libHackerChatCommon.a)
+if (EXISTS "${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a")
+    file(RENAME ${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a ${CMAKE_SOURCE_DIR}/HCCommonBaseCommand/lib/libHackerChatCommon.a)
+    file(REMOVE ${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a)
+else()
+    message("Failed to build HackerChatCommon library.")
+endif()
+
+message("TEST: ${HACKERCHAT_LIBRARIES}")
+# Move header files and library to central library repo
+file(COPY ${CMAKE_SOURCE_DIR}/HCCommonBaseCommand/lib/libHackerChatCommon.a
+        DESTINATION ${HACKERCHAT_LIBRARIES}/HCCommonBaseCommand/lib)
+file(COPY ${CMAKE_SOURCE_DIR}/HCCommonBaseCommand/include
+        DESTINATION ${HACKERCHAT_LIBRARIES}/HCCommonBaseCommand)
