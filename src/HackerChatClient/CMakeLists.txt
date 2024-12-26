@@ -42,7 +42,9 @@ add_executable(HackerChatClient
         HackerChatClient_main.cpp
         HCController/HackerChatController.cpp
         HCModel/HackerChatModel.cpp
-        HCModel/HackerChatModel.hpp)
+        HCModel/HackerChatModel.hpp
+        HCView/HackerChatMainView.cpp
+        HCView/HackerChatMainView.hpp)
 
 # Link boost libraries with executables
 target_link_libraries(HackerChatClient ${Boost_LIBRARIES}

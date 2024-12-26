@@ -31,7 +31,7 @@ HackerChatController::HackerChatController(std::shared_ptr<WebSocketClient> webS
         rootDir(),
         deviceId(deviceId),
         stop(false),
-        newMessages(),
+        incomingMessagesQueue(),
         model(model),
         webSocketClient(std::move(webSocketClient)){
 }
@@ -72,6 +72,16 @@ bool HackerChatController::Load(const std::string& configFilename){
 
 int HackerChatController::Start(net::io_context& ioc) {
     try {
+        // Register incoming message callback with websocket
+        std::function<void(HCCommonBaseCommand&)> incomingMessageCallback = [this](HCCommonBaseCommand& message){
+            // There needs to be a lock for this
+            if(incomingMessagesQueue.size() > 5){
+                incomingMessagesQueue.pop();
+            }
+            incomingMessagesQueue.push(message);
+        };
+        webSocketClient->RegisterIncomingMessageCallback(incomingMessageCallback);
+
         using FuncPtr = void(*)();
         auto const text = "Hello!";
         stop = false; //Will need thread protection
@@ -103,8 +113,13 @@ void HackerChatController::Proc(){
     }
     std::string message;
     while(!stop){
-        std::cout << "Enter message here: " << std::endl;
+        std::cout << "Look at this" << std::endl;
+        // Display main view
+        mainView.DisplayMainView();
+
+        // Get user input
         std::getline(std::cin, message);
+
         // Create a message command
         boost::uuids::random_generator gen;
         boost::uuids::uuid source = gen();
@@ -112,6 +127,15 @@ void HackerChatController::Proc(){
         HCCommonBaseCommand command(source, destination, message);
         std::string commandAsString = HCCommonBaseCommand::_serialize(command);
         this->webSocketClient->SendMessage(commandAsString);
+
+        // Store message in message list model
+        model.StoreMessage(command);
+
+        // Update main view
+        mainView.UpdateMainView();
+
+        // Clear the getline buffer
+        message.clear();
     }
 }
 
