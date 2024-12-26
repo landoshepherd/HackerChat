@@ -32,14 +32,17 @@ if(NOT Boost_FOUND)
 endif()
 
 # Include boost header files
-include_directories(${Boost_INCLUDE_DIRS}
+include_directories(${CMAKE_HOME_DIRECTORY}
+                    ${Boost_INCLUDE_DIRS}
                     ${EXTERNAL_LIBRARIES}/rapidjson
                     ${HACKERCHAT_LIBRARIES}/include)
 
-# Generate the HackerChatClient executable
+# Generate the HackerChatController executable
 add_executable(HackerChatClient
         HackerChatClient_main.cpp
-        HackerChatClient.cpp)
+        HCController/HackerChatController.cpp
+        HCModel/HackerChatModel.cpp
+        HCModel/HackerChatModel.hpp)
 
 # Link boost libraries with executables
 target_link_libraries(HackerChatClient ${Boost_LIBRARIES}

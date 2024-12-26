@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 #include <thread>
-#include "HackerChatClient.hpp"
+#include "HackerChatController.hpp"
 #include "rapidjson.h"
 #include "document.h"
 #include "HCCommonBaseCommand/HCCommonBaseCommand.h"
@@ -25,16 +25,18 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-HackerChatClient::HackerChatClient():
+HackerChatController::HackerChatController(std::shared_ptr<WebSocketClient> webSocketClient,
+                                           HackerChatModel& model,
+                                           std::string& deviceId):
         rootDir(),
-        host("127.0.0.1"),
-        port("8001"),
-        deviceId("21972c83-d79d-4070-993e-8c429d0b606a"),
+        deviceId(deviceId),
         stop(false),
-        newMessages(){
+        newMessages(),
+        model(model),
+        webSocketClient(std::move(webSocketClient)){
 }
 
-bool HackerChatClient::Load(const std::string& configFilename){
+bool HackerChatController::Load(const std::string& configFilename){
     bool rc = true;
 
     BOOST_LOG_TRIVIAL(trace) << "Loading chat client config file...";
@@ -49,46 +51,43 @@ bool HackerChatClient::Load(const std::string& configFilename){
         if (filestream.is_open()){
             configBuffer << filestream.rdbuf();
             doc.Parse(configBuffer.str().c_str());
-            host = doc["host"].GetString();
-            port = doc["port"].GetString();
+//            host = doc["host"].GetString();
+//            port = doc["port"].GetString();
             deviceId = doc["deviceId"].GetString();
 
             BOOST_LOG_TRIVIAL(trace) << "Successfully loading chat client configuration.";
         }
         else{
             rc = false;
-            BOOST_LOG_TRIVIAL(error) << "Failed to load HackerChatClient config file.";
+            BOOST_LOG_TRIVIAL(error) << "Failed to load HackerChatController config file.";
         }
     }
     else{
         rc = false;
-        BOOST_LOG_TRIVIAL(error) << "HackerChatClient config file not found.";
+        BOOST_LOG_TRIVIAL(error) << "HackerChatController config file not found.";
     }
 
     return rc;
 }
 
-int HackerChatClient::Start() {
+int HackerChatController::Start(net::io_context& ioc) {
     try {
         using FuncPtr = void(*)();
         auto const text = "Hello!";
         stop = false; //Will need thread protection
 
-        net::io_context ioc;
-        webSocketClient = std::make_shared<WebSocketClient>(ioc, host, port, text);
+        //Register callback for incoming messages
         webSocketClient->Start();
+
+        //Allow for websocket to make a connection;
+        std::this_thread::sleep_for(std::chrono::seconds(3));
 
         std::thread userThread([this]() {
             Proc();
         });
 
-        std::thread messageProcessingThread([this](){
-           ProcessMessageQueue();
-        });
-
         ioc.run();
         userThread.join();
-        //webSocketThread.join();
     }
     catch(std::exception& ex){
         std::cout << ex.what() << std::endl;
@@ -97,30 +96,13 @@ int HackerChatClient::Start() {
     return EXIT_SUCCESS;
 }
 
-void HackerChatClient::ProcessMessageQueue(){
-    while(true){
-        webSocketClient->GetQueueLock().lock();
-        std::queue<HCCommonBaseCommand>& wsQueue = webSocketClient->GetMessageQueue();
-        while(!wsQueue.empty()){
-            newMessages.push(wsQueue.front());
-            wsQueue.pop();
-        }
-        webSocketClient->GetQueueLock().unlock();
-        //Sleep to allow the possibility of the other thread obtaining the lock
+void HackerChatController::Proc(){
+    //Wait here until the websocket client makes a connection to the server
+    while(!webSocketClient->Connected()){
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-}
-
-void HackerChatClient::Proc(){
-    //Wait here until the websocket client makes a connection to the server
-    webSocketClient->GetWebSocketProcLock().lock();
     std::string message;
     while(!stop){
-        while(!newMessages.empty()){
-            std::cout << newMessages.front()._getMessage() << std::endl;
-            newMessages.pop();
-        }
-
         std::cout << "Enter message here: " << std::endl;
         std::getline(std::cin, message);
         // Create a message command
