@@ -10,6 +10,7 @@
 
 #include "WebSocket/WebSocketClient.hpp"
 #include "HCModel/HackerChatModel.hpp"
+#include "HCView/HackerChatMainView.hpp"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -26,8 +27,9 @@ private:
     std::string rootDir;
     std::string deviceId;
     bool stop;
-    std::queue<HCCommonBaseCommand> newMessages;
+    std::queue<HCCommonBaseCommand> incomingMessagesQueue;
     HackerChatModel model;
+    HackerChatMainView mainView;
 public:
     // Resolver and socket require an io_context
     HackerChatController(std::shared_ptr<WebSocketClient> webSocketClient,

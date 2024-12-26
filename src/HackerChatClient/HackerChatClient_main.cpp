@@ -15,11 +15,7 @@ int main(int argc, char* argv[]){
     // Model will be shared by both the view and controller
     HackerChatModel model;
 
-    // Register incoming message callback with websocket
-    std::function<void(HCCommonBaseCommand&)> callback = [&model](HCCommonBaseCommand& message){
-        model.StoreMessage(message);
-    };
-    webSocketClient->RegisterIncomingMessageCallback(callback);
+
     HackerChatController controller(webSocketClient, model, deviceId);
     controller.Start(ioc);
 
