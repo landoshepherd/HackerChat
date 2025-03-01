@@ -34,23 +34,22 @@ if(NOT Boost_FOUND)
 endif()
 
 add_library(HackerChatCommon STATIC
-        HCCommonBaseCommand/src/HCCommonBaseCommand.cpp
-        HCCommonBaseCommand/include/HCCommonBaseCommand.h
+        source/HCCommonBaseCommand.cpp
+        include/HCCommonBaseCommand.hpp
+        source/MessageQueue.cpp
+        include/MessageQueue.hpp
 )
 
 target_link_libraries(HackerChatCommon ${Boost_LIBRARIES})
 
 # Move compiled library to lib directory
 if (EXISTS "${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a")
-    file(RENAME ${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a ${CMAKE_SOURCE_DIR}/HCCommonBaseCommand/lib/libHackerChatCommon.a)
+    file(RENAME ${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a ${CMAKE_SOURCE_DIR}/lib/libHackerChatCommon.a)
     file(REMOVE ${CMAKE_SOURCE_DIR}/build/libHackerChatCommon.a)
 else()
     message("Failed to build HackerChatCommon library.")
 endif()
 
-message("TEST: ${HACKERCHAT_LIBRARIES}")
 # Move header files and library to central library repo
-file(COPY ${CMAKE_SOURCE_DIR}/HCCommonBaseCommand/lib/libHackerChatCommon.a
-        DESTINATION ${HACKERCHAT_LIBRARIES}/HCCommonBaseCommand/lib)
-file(COPY ${CMAKE_SOURCE_DIR}/HCCommonBaseCommand/include
-        DESTINATION ${HACKERCHAT_LIBRARIES}/HCCommonBaseCommand)
+file(COPY ${CMAKE_SOURCE_DIR}/lib/libHackerChatCommon.a DESTINATION ${HACKERCHAT_LIBRARIES}/lib)
+file(COPY ${CMAKE_SOURCE_DIR}/include/ DESTINATION ${HACKERCHAT_LIBRARIES}/include)

@@ -2,7 +2,7 @@
 // Created by Lando Shepherd on 8/11/24.
 //
 
-#include "../include/HCCommonBaseCommand.h"
+#include "../include/HCCommonBaseCommand.hpp"
 #include "document.h"
 #include <iostream>
 #include <boost/uuid/string_generator.hpp>
@@ -28,15 +28,15 @@ HCCommonBaseCommand::HCCommonBaseCommand(const uuid p_source,
         _destination(p_destination),
         _message(p_message){}
 
-uuid HCCommonBaseCommand::_getSource(){
+uuid HCCommonBaseCommand::_getSource() const {
     return _source;
 }
 
-uuid HCCommonBaseCommand::_getDestination(){
+uuid HCCommonBaseCommand::_getDestination() const {
     return _destination;
 }
 
-std::string HCCommonBaseCommand::_getMessage(){
+std::string HCCommonBaseCommand::_getMessage() const {
     return _message;
 }
 
@@ -66,7 +66,7 @@ HCCommonBaseCommand HCCommonBaseCommand::_deserialize(const std::string& jsonStr
     return command;
 }
 
-std::string HCCommonBaseCommand::_serialize(HCCommonBaseCommand& command){
+std::string HCCommonBaseCommand::_serialize(const HCCommonBaseCommand& command){
     rapidjson::Document document;
     document.SetObject();
 

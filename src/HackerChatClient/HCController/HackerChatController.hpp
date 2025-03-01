@@ -8,9 +8,11 @@
 #include <string>
 #include <mutex>
 
-#include "WebSocket/WebSocketClient.hpp"
+#include "WebSocketClient.hpp"
 #include "HCModel/HackerChatModel.hpp"
 #include "HCView/HackerChatMainView.hpp"
+#include "HCCommonBaseCommand.hpp"
+#include "MessageQueue.hpp"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -23,22 +25,26 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 class HackerChatController
 {
 private:
-    std::shared_ptr<WebSocketClient> webSocketClient;
-    std::string rootDir;
-    std::string deviceId;
-    bool stop;
-    std::queue<HCCommonBaseCommand> incomingMessagesQueue;
-    HackerChatModel model;
-    HackerChatMainView mainView;
+    std::shared_ptr<WebSocketClient> m_webSocketClient;
+    std::string m_rootDir;
+    std::string m_deviceId;
+    bool m_stop;
+    HackerChatModel m_model;
+    HackerChatMainView m_mainView;
+    std::mutex m_incomingMessagesQueueLock;
+    std::shared_ptr<MessageQueue> m_incomingMessages;
+    std::shared_ptr<MessageQueue> m_outgoingMessages;
 public:
     // Resolver and socket require an io_context
     HackerChatController(std::shared_ptr<WebSocketClient> webSocketClient,
                          HackerChatModel& model,
-                         std::string& deviceId);
+                         std::string& deviceId,
+                         std::shared_ptr<MessageQueue> incomingMessageQueue,
+                         std::shared_ptr<MessageQueue> outgoingMessageQueue);
     ~HackerChatController() = default;
     bool Load(const std::string& configFilename);
     int Start(net::io_context& ioc);
     void Proc();
     void InitializeLogging();
-    //bool _SendMessage(std::string& message, std::string& statusMessage);
+    void SendMessage(const HCCommonBaseCommand& command) const;
 };

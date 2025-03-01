@@ -14,7 +14,7 @@
 #include "HackerChatController.hpp"
 #include "rapidjson.h"
 #include "document.h"
-#include "HCCommonBaseCommand/HCCommonBaseCommand.h"
+#include "HCCommonBaseCommand.hpp"
 #include <boost/uuid/string_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_serialize.hpp>
@@ -27,14 +27,16 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 HackerChatController::HackerChatController(std::shared_ptr<WebSocketClient> webSocketClient,
                                            HackerChatModel& model,
-                                           std::string& deviceId):
-        rootDir(),
-        deviceId(deviceId),
-        stop(false),
-        incomingMessagesQueue(),
-        model(model),
-        webSocketClient(std::move(webSocketClient)){
-}
+                                           std::string& deviceId,
+                                           std::shared_ptr<MessageQueue> pIncomingMessageQueue,
+                                           std::shared_ptr<MessageQueue> pOutgoingMessageQueue):
+        m_rootDir(),
+        m_deviceId(deviceId),
+        m_stop(false),
+        m_model(model),
+        m_webSocketClient(std::move(webSocketClient)),
+        m_incomingMessages(pIncomingMessageQueue),
+        m_outgoingMessages(pOutgoingMessageQueue){}
 
 bool HackerChatController::Load(const std::string& configFilename){
     bool rc = true;
@@ -53,7 +55,7 @@ bool HackerChatController::Load(const std::string& configFilename){
             doc.Parse(configBuffer.str().c_str());
 //            host = doc["host"].GetString();
 //            port = doc["port"].GetString();
-            deviceId = doc["deviceId"].GetString();
+            m_deviceId = doc["deviceId"].GetString();
 
             BOOST_LOG_TRIVIAL(trace) << "Successfully loading chat client configuration.";
         }
@@ -75,19 +77,28 @@ int HackerChatController::Start(net::io_context& ioc) {
         // Register incoming message callback with websocket
         std::function<void(HCCommonBaseCommand&)> incomingMessageCallback = [this](HCCommonBaseCommand& message){
             // There needs to be a lock for this
+            m_incomingMessagesQueueLock.lock();
             if(incomingMessagesQueue.size() > 5){
                 incomingMessagesQueue.pop();
             }
             incomingMessagesQueue.push(message);
+            m_incomingMessagesQueueLock.unlock();
         };
-        webSocketClient->RegisterIncomingMessageCallback(incomingMessageCallback);
+        m_webSocketClient->RegisterIncomingMessageCallback(incomingMessageCallback);
+
+        // Register outgoing message callback with websocket
+        std::function<void(HCCommonBaseCommand&)> outgoingMessageCallback = [this](HCCommonBaseCommand& message) {
+            m_model.StoreMessage(message);
+            m_mainView.UpdateMainView();
+        };
+        m_webSocketClient->RegisterOutgoingMessageCallback(outgoingMessageCallback);
 
         using FuncPtr = void(*)();
         auto const text = "Hello!";
-        stop = false; //Will need thread protection
+        m_stop = false; //Will need thread protection
 
         //Register callback for incoming messages
-        webSocketClient->Start();
+        m_webSocketClient->Start();
 
         //Allow for websocket to make a connection;
         std::this_thread::sleep_for(std::chrono::seconds(3));
@@ -108,14 +119,16 @@ int HackerChatController::Start(net::io_context& ioc) {
 
 void HackerChatController::Proc(){
     //Wait here until the websocket client makes a connection to the server
-    while(!webSocketClient->Connected()){
+    uint8_t retryCount = 0;
+    while(!m_webSocketClient->Connected() && retryCount < 3){
         std::this_thread::sleep_for(std::chrono::seconds(1));
+        retryCount++;
     }
     std::string message;
-    while(!stop){
+    while(!m_stop){
         std::cout << "Look at this" << std::endl;
         // Display main view
-        mainView.DisplayMainView();
+        m_mainView.DisplayMainView();
 
         // Get user input
         std::getline(std::cin, message);
@@ -125,18 +138,21 @@ void HackerChatController::Proc(){
         boost::uuids::uuid source = gen();
         boost::uuids::uuid destination = gen();
         HCCommonBaseCommand command(source, destination, message);
-        std::string commandAsString = HCCommonBaseCommand::_serialize(command);
-        this->webSocketClient->SendMessage(commandAsString);
+
+        this->m_webSocketClient->SendMessage(command);
 
         // Store message in message list model
-        model.StoreMessage(command);
+        m_model.StoreMessage(command);
 
         // Update main view
-        mainView.UpdateMainView();
+        m_mainView.UpdateMainView();
 
         // Clear the getline buffer
         message.clear();
     }
 }
 
+void HackerChatController::SendMessage(const HCCommonBaseCommand& command) const {
+    m_outgoingMessages->push(command);
+}
 
